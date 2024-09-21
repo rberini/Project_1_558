@@ -1,0 +1,44 @@
+[
+  {
+    "objectID": "project_1_558.html",
+    "href": "project_1_558.html",
+    "title": "ST 558 Project One",
+    "section": "",
+    "text": "some placeholder text"
+  },
+  {
+    "objectID": "project_1_558.html#project-overview",
+    "href": "project_1_558.html#project-overview",
+    "title": "ST 558 Project One",
+    "section": "",
+    "text": "some placeholder text"
+  },
+  {
+    "objectID": "project_1_558.html#required-packages",
+    "href": "project_1_558.html#required-packages",
+    "title": "ST 558 Project One",
+    "section": "Required Packages",
+    "text": "Required Packages\nLoad required packages for project\n\nlibrary(tidyverse)\n\n── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──\n✔ dplyr     1.1.4     ✔ readr     2.1.5\n✔ forcats   1.0.0     ✔ stringr   1.5.1\n✔ ggplot2   3.5.1     ✔ tibble    3.2.1\n✔ lubridate 1.9.3     ✔ tidyr     1.3.1\n✔ purrr     1.0.2     \n── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──\n✖ dplyr::filter() masks stats::filter()\n✖ dplyr::lag()    masks stats::lag()\nℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors\n\nlibrary(httr)\nlibrary(jsonlite)\n\n\nAttaching package: 'jsonlite'\n\nThe following object is masked from 'package:purrr':\n\n    flatten\n\nlibrary(tidycensus)"
+  },
+  {
+    "objectID": "project_1_558.html#data-processing",
+    "href": "project_1_558.html#data-processing",
+    "title": "ST 558 Project One",
+    "section": "Data Processing",
+    "text": "Data Processing\nsome placeholder text\n\n# function for creating data should assign a class of census\n# class(your_tibble) &lt;- c(\"census\", class(your_tibble))"
+  },
+  {
+    "objectID": "project_1_558.html#obtaining-person-level-records",
+    "href": "project_1_558.html#obtaining-person-level-records",
+    "title": "ST 558 Project One",
+    "section": "Obtaining Person Level Records",
+    "text": "Obtaining Person Level Records\nsome placeholder text"
+  },
+  {
+    "objectID": "project_1_558.html#writing-a-generic-function-for-summarizing",
+    "href": "project_1_558.html#writing-a-generic-function-for-summarizing",
+    "title": "ST 558 Project One",
+    "section": "Writing a Generic Function for Summarizing",
+    "text": "Writing a Generic Function for Summarizing\nsome placeholder text\n\nNumeric Summary\nwrite a function that produces means and standard deviations for our numeric variable(s) and counts for our categorical variable(s).\nTest out this function by running summary(your_census_tibble) on something you’ve returned from your census API function.\n\n\nGraphical Summary\nSimilarly, let’s create a generic plot() function for a census class tibble. Require the user to specify one categorical variable and one numeric variable for plotting purposes.\n\n#ggplot(your_census_tibble, aes(x = get(cat_var), y = get(num_var), weight = PWGTP)) + geom_boxplot()"
+  }
+]
