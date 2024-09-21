@@ -4,6 +4,7 @@ author: "Robert Berini & Robert Ferrand"
 format: html
 editor: visual
 ---
+
 ## Project Overview
 
 some placeholder text
@@ -11,49 +12,98 @@ some placeholder text
 ## Required Packages
 
 Load required packages for project
+
 ```{r}
 library(tidyverse)
 library(httr)
 library(jsonlite)
 library(tidycensus)
+library(janitor)
+library(quantreg)
 ```
-
 
 ## Data Processing
 
 some placeholder text
 
+### Build API
+
 ```{r}
+year_options <- c(2010:2019, 2021, 2022)
+numeric_options <- c("AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP")
+cat_options <- c("FER", "HHL", "HISPEED", "JWAP", "JWDP", "JWTRNS", "SCH", "SCHL", "SEX")
+geo_options <- c("All", "Region", "Division", "State")
+
+year_select <- ""
+
+while (!(year_select %in% year_options)) {
+  year_select <- as.numeric(readline("What year do you select? "))
+}
+
+numeric_select <- ""
+
+while (!(numeric_select %in% numeric_options)) {
+  numeric_select <- readline("What numeric variable do you select? ")
+}
+
+cat_select <- ""
+
+while (!(cat_select %in% cat_options)) {
+  cat_select <- readline("What categorical variable do you select? ")
+}
+
+URL_base <- "https://api.census.gov/data/"
+
+URL_id = paste0(URL_base,year_select,"/acs/acs1/pums?get=PWGTP,",numeric_select,",",cat_select)
+```
+
+### Create Database
+
+some placeholder text
+
+```{r}
+census_df <- fromJSON(URL_id)
+
+census_tib <- census_df |>
+  as_tibble() |>
+  row_to_names(row_number = 1)
+
+census_tib[[cat_select]] <- as.factor(census_tib[[cat_select]])
+census_tib[[numeric_select]] <- as.numeric(census_tib[[numeric_select]])
+census_tib$PWGTP <- as.numeric(census_tib$PWGTP)
+
+str(census_tib)
+
 
 # function for creating data should assign a class of census
 # class(your_tibble) <- c("census", class(your_tibble))
+class(census_tib) <- c("census", class(census_tib))
 ```
-
 
 ## Obtaining Person Level Records
 
 some placeholder text
 
 ```{r}
-
+# code check
 ```
-
 
 ## Writing a Generic Function for Summarizing
 
 some placeholder text
 
 ### Numeric Summary
+
 write a function that produces means and standard deviations for our numeric variable(s) and counts for our categorical variable(s).
 
 ```{r}
-
+mean(census_tib[[numeric_select]])
 ```
 
-Test out this function by running summary(_your_census_tibble_) on something you’ve returned from your census API function.
+Test out this function by running summary(*your_census_tibble*) on something you’ve returned from your census API function.
 
 ```{r}
-
+mean(census_tib[[numeric_select]])
 ```
 
 ### Graphical Summary
@@ -62,6 +112,7 @@ Similarly, let’s create a generic plot() function for a census class tibble. R
 
 ```{r}
 
-#ggplot(your_census_tibble, aes(x = get(cat_var), y = get(num_var), weight = PWGTP)) + geom_boxplot()
+ggplot(census_tib,
+       aes(x = cat_select, y = numeric_select, weight = PWGTP)) +
+  geom_boxplot()
 ```
-
