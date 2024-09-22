@@ -13,7 +13,7 @@ some placeholder text
 
 Load required packages for project
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 library(tidyverse)
 library(httr)
 library(jsonlite)
