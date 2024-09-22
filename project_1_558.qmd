@@ -4,6 +4,7 @@ author: "Robert Berini & Robert Ferrand"
 format: html
 editor: visual
 ---
+
 ## Project Overview
 
 some placeholder text
@@ -11,6 +12,15 @@ some placeholder text
 ## Required Packages
 
 Load required packages for project
+
+library(tidyverse)
+
+library(httr)
+
+library(jsonlite)
+
+library(tidycensus)
+
 ```{r}
 library(tidyverse)
 library(httr)
@@ -18,17 +28,34 @@ library(jsonlite)
 library(tidycensus)
 ```
 
-
 ## Data Processing
 
 some placeholder text
 
 ```{r}
+#url <- "https://api.census.gov/data/2022/acs/acs1/pums"
+#ID_info <- httr::GET(url)
+#status_code(ID_info)
+#str(ID_info, max.level=1)
+#parsed <- fromJSON(rawToChar(ID_info$content))
+
+
+
+#URL_ids1 <- "https://api.nhle.com/stats/rest/en/team"
+#id_info1 <- httr::GET(URL_ids)
+#str(id_info1, max.level = 1)
+#parsed <- fromJSON(rawToChar(id_info1$content))
+#team_info1 <- as_tibble(parsed$data)
+#team_info1
+
+
+help <- get_acs(geography = "state", variables = "B19013_001", year = 2022)
+
+
 
 # function for creating data should assign a class of census
 # class(your_tibble) <- c("census", class(your_tibble))
 ```
-
 
 ## Obtaining Person Level Records
 
@@ -38,19 +65,19 @@ some placeholder text
 
 ```
 
-
 ## Writing a Generic Function for Summarizing
 
 some placeholder text
 
 ### Numeric Summary
+
 write a function that produces means and standard deviations for our numeric variable(s) and counts for our categorical variable(s).
 
 ```{r}
 
 ```
 
-Test out this function by running summary(_your_census_tibble_) on something you’ve returned from your census API function.
+Test out this function by running summary(*your_census_tibble*) on something you've returned from your census API function.
 
 ```{r}
 
@@ -58,10 +85,9 @@ Test out this function by running summary(_your_census_tibble_) on something you
 
 ### Graphical Summary
 
-Similarly, let’s create a generic plot() function for a census class tibble. Require the user to specify one categorical variable and one numeric variable for plotting purposes.
+Similarly, let's create a generic plot() function for a census class tibble. Require the user to specify one categorical variable and one numeric variable for plotting purposes.
 
 ```{r}
 
 #ggplot(your_census_tibble, aes(x = get(cat_var), y = get(num_var), weight = PWGTP)) + geom_boxplot()
 ```
-
