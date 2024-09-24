@@ -26,6 +26,8 @@ library(tidyverse)
 library(httr)
 library(jsonlite)
 library(tidycensus)
+library(janitor)
+library(quantreg)
 ```
 
 ## Data Processing
@@ -33,28 +35,95 @@ library(tidycensus)
 some placeholder text
 
 ```{r}
-#url <- "https://api.census.gov/data/2022/acs/acs1/pums"
-#ID_info <- httr::GET(url)
-#status_code(ID_info)
-#str(ID_info, max.level=1)
-#parsed <- fromJSON(rawToChar(ID_info$content))
+valid_num_var <- c("AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP", "PWGTP")
+valid_cat_var <- c("FER", "HHL", "HISPEED", "JWAP", "JWDP", "JWTRNS", "SCH", "SCHL", "SEX")
+valid_geo_level <- c("All", "Region", "Division", "State")
+
+URL_base <- "https://api.census.gov/data/"
+
+numeric_select <- 
+
+#URL_id = paste0(URL_base,year_select,"/acs/acs1/pums?get=PWGTP,",numeric_select,",",cat_select)
+
+#URL_id <- "https://api.census.gov/data/2022/acs/acs1/pums?get=SEX,PWGTP&SCHL=24"
+URL_id <- "https://api.census.gov/data/2022/acs/acs1/pums?get=SEX,RAC1P&AGEP=30&for=division:9"
+
+census_df <- fromJSON(URL_id)
+
+census_tib <- census_df |>
+  as_tibble() |>
+  row_to_names(row_number = 1)
+
+
+for (column in colnames(census_tib)){
+  if (column %in% valid_num_var) {
+    census_tib[[column]] <- as.numeric(census_tib[[column]])
+  } else if (column %in% valid_cat_var) {
+    census_tib[[column]] <- as.factor(census_tib[[column]])
+  }
+}
+```
+
+THIS ONE WORKS
+
+```{r}
+surv_year <- c(2010:2022)
+valid_num_var <- c("AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP", "PWGTP")
+valid_cat_var <- c("FER", "HHL", "HISPEED", "JWAP", "JWDP", "JWTRNS", "SCH", "SCHL", "SEX")
+valid_geo_level <- c("All", "Region", "Division", "State")
+
+api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var = "SEX", geo_level = "All", condition = NULL)
+{
+   if (surv_year < 2010 || surv_year > 2022) {
+    stop("Year must be between 2010 and 2022.")
+   }
+  if (any(!num_var %in% valid_num_var)) {
+    stop("Invalid Numeric Variable")
+    }
+  if (any(!cat_var %in% valid_cat_var)) {
+        stop("Invalid Categorical Variable")
+  }
+    if (any(!geo_level %in% valid_geo_level)) {
+        stop("Invalid Geography Level")
+    }
+  
+  num_var_string <- paste(num_var, collapse = ",")
+  print(num_var_string)
+  cat_var_string <- paste(cat_var, collapse = ",")
+  print(cat_var_string)
+  URL_base <- "https://api.census.gov/data/"
+  URL_id <- paste0(URL_base, surv_year, "/acs/acs1/pums?get=PWGTP,", num_var_string, ",", cat_var_string)
+  
+  if (!is.null(condition)) {
+    condition_string <- paste(condition, collapse = "&")
+    URL_id <- paste0(URL_id, "&", condition_string)
+  }
+  
+  #AS DATETIME, AS DATE, AS TIME
+  print(URL_id)
+  
+  census_df <- fromJSON(URL_id)
+  
+  census_tib <- census_df |>
+    as_tibble() |>
+    row_to_names(row_number = 1)
+  
+  
+  for (column in colnames(census_tib)) {
+    if (column %in% valid_num_var) {
+      census_tib[[column]] <- as.numeric(census_tib[[column]])
+    } else if (column %in% valid_cat_var) {
+      census_tib[[column]] <- as.factor(census_tib[[column]])
+    }
+  }
+  print(census_tib)
+}
 
 
 
-#URL_ids1 <- "https://api.nhle.com/stats/rest/en/team"
-#id_info1 <- httr::GET(URL_ids)
-#str(id_info1, max.level = 1)
-#parsed <- fromJSON(rawToChar(id_info1$content))
-#team_info1 <- as_tibble(parsed$data)
-#team_info1
-
-
-help <- get_acs(geography = "state", variables = "B19013_001", year = 2022)
-
-
-
-# function for creating data should assign a class of census
-# class(your_tibble) <- c("census", class(your_tibble))
+#make it so that you can't print two of the same column name
+#make it so that geography level does something, condition it?
+#create a for loop to specify multiple data items
 ```
 
 ## Obtaining Person Level Records
