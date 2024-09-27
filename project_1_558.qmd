@@ -70,9 +70,9 @@ THIS ONE WORKS
 surv_year <- c(2010:2022)
 valid_num_var <- c("AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP", "PWGTP")
 valid_cat_var <- c("FER", "HHL", "HISPEED", "JWAP", "JWDP", "JWTRNS", "SCH", "SCHL", "SEX")
-valid_geo_level <- c("All", "Region", "Division", "State")
+valid_geo_level <- c("ALL", "REGION", "DIVISION", "STATE")
 
-api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var = "SEX", geo_level = "All", condition = NULL)
+api_query <- function(surv_year = "2022", num_var = c("AGEP"), cat_var = "SEX", geo_level = "All", condition = NULL, geo_subset = NULL)
 {
    if (surv_year < 2010 || surv_year > 2022) {
     stop("Year must be between 2010 and 2022.")
@@ -87,20 +87,46 @@ api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var 
         stop("Invalid Geography Level")
     }
   
-  num_var_string <- paste(num_var, collapse = ",")
-  print(num_var_string)
-  cat_var_string <- paste(cat_var, collapse = ",")
-  print(cat_var_string)
+  num_var_string <- paste(unique(num_var), collapse = ",")
+  cat_var_string <- paste(unique(cat_var), collapse = ",")
+  geo_level_string <- paste(unique(geo_level), collapse = ",")
   URL_base <- "https://api.census.gov/data/"
-  URL_id <- paste0(URL_base, surv_year, "/acs/acs1/pums?get=PWGTP,", num_var_string, ",", cat_var_string)
+  URL_id <- paste0(URL_base, surv_year, "/acs/acs1/pums?get=PWGTP,", num_var_string, ",", cat_var_string, ",",geo_level_string)
+  
   
   if (!is.null(condition)) {
     condition_string <- paste(condition, collapse = "&")
     URL_id <- paste0(URL_id, "&", condition_string)
   }
   
+  print("THIS IS AN ERROR ILL FIX IT LATER")
+  if(!is.null(geo_subset)) {
+    print(geo_subset)
+    region_string <- paste(geo_subset, collapse = "&")
+    print(region_string)
+    URL_id <- paste0(URL_id, "&for=", region_string)
+    print(URL_id)
+  }
+
+  
   #AS DATETIME, AS DATE, AS TIME
+  
+  #parsed_url <- parse_url(URL_id)
+  #query_params <- parsed_url$query
+  #params <- unlist(strsplit(query_params$get, ","))
+  #params <- params[!params %in% names(query_params)]
+  #query_params$get <- paste(rev(unique(rev(params))), collapse = ",")
+  #final_url <- build_url(parsed_url)
+  #final_url <- gsub("%2C", ",", cleaned_url)
+  #URL_id <- final_url
+  
+  parsed_url <- parse_url(URL_id)
+  print(parsed_url)
+    parsed_url$query$get <- paste(unique(unlist(strsplit(parsed_url$query$get, ",")))[!unique(unlist(strsplit(parsed_url$query$get, ","))) %in% names(parsed_url$query)], collapse = ",")
+  URL_id <- gsub("%2C", ",", build_url(parsed_url))
   print(URL_id)
+
+
   
   census_df <- fromJSON(URL_id)
   
@@ -122,7 +148,6 @@ api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var 
 
 
 #make it so that you can't print two of the same column name
-#make it so that geography level does something, condition it?
 #create a for loop to specify multiple data items
 ```
 
