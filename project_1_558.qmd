@@ -4,56 +4,234 @@ author: "Robert Berini & Robert Ferrand"
 format: html
 editor: visual
 ---
+
 ## Project Overview
 
-some placeholder text
+Query the Public Use Microdata Sample (PUMS) Census API. Creates a function that allows the user to call the API with different combinations of variables. Provides numerical and graphical summaries.
 
 ## Required Packages
 
 Load required packages for project
-```{r}
+
+```{r setup, message=FALSE, warning=FALSE}
 library(tidyverse)
 library(httr)
 library(jsonlite)
 library(tidycensus)
+library(janitor)
+library(quantreg)
 ```
-
 
 ## Data Processing
 
 some placeholder text
 
+### Build API
+
+v1 berini (outside of function)
 ```{r}
+#| eval: false
+#| echo: false
+
+year_options <- c(2010:2019, 2021, 2022)
+numeric_options <- c("AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP")
+cat_options <- c("FER", "HHL", "HISPEED", "JWAP", "JWDP", "JWTRNS", "SCH", "SCHL", "SEX")
+geo_options <- c("All", "Region", "Division", "State")
+
+year_select <- ""
+
+while (!(year_select %in% year_options)) {
+  year_select <- as.numeric(readline("What year do you select? "))
+}
+
+numeric_select <- ""
+
+while (!(numeric_select %in% numeric_options)) {
+  numeric_select <- readline("What numeric variable do you select? ")
+}
+
+cat_select <- ""
+
+while (!(cat_select %in% cat_options)) {
+  cat_select <- readline("What categorical variable do you select? ")
+}
+
+URL_base <- "https://api.census.gov/data/"
+
+URL_id = paste0(URL_base,year_select,"/acs/acs1/pums?get=PWGTP,",numeric_select,",",cat_select)
+```
+
+
+v2 ferrand
+```{r}
+#| eval: false
+#| echo: false
+
+
+valid_num_var <- c("AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP", "PWGTP")
+valid_cat_var <- c("FER", "HHL", "HISPEED", "JWAP", "JWDP", "JWTRNS", "SCH", "SCHL", "SEX")
+valid_geo_level <- c("All", "Region", "Division", "State")
+
+URL_base <- "https://api.census.gov/data/"
+
+numeric_select <- 
+
+#URL_id = paste0(URL_base,year_select,"/acs/acs1/pums?get=PWGTP,",numeric_select,",",cat_select)
+
+#URL_id <- "https://api.census.gov/data/2022/acs/acs1/pums?get=SEX,PWGTP&SCHL=24"
+URL_id <- "https://api.census.gov/data/2022/acs/acs1/pums?get=SEX,RAC1P&AGEP=30&for=division:9"
+
+census_df <- fromJSON(URL_id)
+
+census_tib <- census_df |>
+  as_tibble() |>
+  row_to_names(row_number = 1)
+
+
+for (column in colnames(census_tib)){
+  if (column %in% valid_num_var) {
+    census_tib[[column]] <- as.numeric(census_tib[[column]])
+  } else if (column %in% valid_cat_var) {
+    census_tib[[column]] <- as.factor(census_tib[[column]])
+  }
+}
+```
+
+
+v3 ferrand
+
+THIS ONE WORKS
+
+```{r}
+surv_year <- c(2010:2022)
+valid_num_var <- c("AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP", "PWGTP")
+valid_cat_var <- c("FER", "HHL", "HISPEED", "JWAP", "JWDP", "JWTRNS", "SCH", "SCHL", "SEX")
+valid_geo_level <- c("All", "Region", "Division", "State")
+
+api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var = "SEX", geo_level = "All", condition = NULL)
+{
+   if (surv_year < 2010 || surv_year > 2022) {
+    stop("Year must be between 2010 and 2022.")
+   }
+  if (any(!num_var %in% valid_num_var)) {
+    stop("Invalid Numeric Variable")
+    }
+  if (any(!cat_var %in% valid_cat_var)) {
+        stop("Invalid Categorical Variable")
+  }
+    if (any(!geo_level %in% valid_geo_level)) {
+        stop("Invalid Geography Level")
+    }
+  
+  num_var_string <- paste(num_var, collapse = ",")
+  print(num_var_string)
+  cat_var_string <- paste(cat_var, collapse = ",")
+  print(cat_var_string)
+  URL_base <- "https://api.census.gov/data/"
+  URL_id <- paste0(URL_base, surv_year, "/acs/acs1/pums?get=PWGTP,", num_var_string, ",", cat_var_string)
+  
+  if (!is.null(condition)) {
+    condition_string <- paste(condition, collapse = "&")
+    URL_id <- paste0(URL_id, "&", condition_string)
+  }
+  
+  #AS DATETIME, AS DATE, AS TIME
+  print(URL_id)
+  
+  census_df <- fromJSON(URL_id)
+  
+  census_tib <- census_df |>
+    as_tibble() |>
+    row_to_names(row_number = 1)
+  
+  
+  for (column in colnames(census_tib)) {
+    if (column %in% valid_num_var) {
+      census_tib[[column]] <- as.numeric(census_tib[[column]])
+    } else if (column %in% valid_cat_var) {
+      census_tib[[column]] <- as.factor(census_tib[[column]])
+    }
+  }
+  print(census_tib)
+}
+
+
+
+#make it so that you can't print two of the same column name
+#make it so that geography level does something, condition it?
+#create a for loop to specify multiple data items
+```
+
+
+### Create Database
+
+some placeholder text
+
+```{r}
+#| eval: false
+#| echo: false
+
+# switch above to true after completing code chunk
+
+
+census_df <- fromJSON(URL_id)
+
+census_tib <- census_df |>
+  as_tibble() |>
+  row_to_names(row_number = 1)
+
+census_tib[[cat_select]] <- as.factor(census_tib[[cat_select]])
+census_tib[[numeric_select]] <- as.numeric(census_tib[[numeric_select]])
+census_tib$PWGTP <- as.numeric(census_tib$PWGTP)
+
+str(census_tib)
+
 
 # function for creating data should assign a class of census
 # class(your_tibble) <- c("census", class(your_tibble))
+class(census_tib) <- c("census", class(census_tib))
 ```
-
 
 ## Obtaining Person Level Records
 
 some placeholder text
 
 ```{r}
+#| eval: false
+#| echo: false
 
+# switch above to true after completing code chunk
+
+
+# code check
 ```
-
 
 ## Writing a Generic Function for Summarizing
 
 some placeholder text
 
 ### Numeric Summary
+
 write a function that produces means and standard deviations for our numeric variable(s) and counts for our categorical variable(s).
 
 ```{r}
+#| eval: false
+#| echo: false
 
+# switch above to true after completing code chunk
+
+mean(census_tib[[numeric_select]])
 ```
 
-Test out this function by running summary(_your_census_tibble_) on something you’ve returned from your census API function.
+Test out this function by running summary(*your_census_tibble*) on something you’ve returned from your census API function.
 
 ```{r}
+#| eval: false
+#| echo: false
 
+# switch above to true after completing code chunk
+
+mean(census_tib[[numeric_select]])
 ```
 
 ### Graphical Summary
@@ -61,7 +239,12 @@ Test out this function by running summary(_your_census_tibble_) on something you
 Similarly, let’s create a generic plot() function for a census class tibble. Require the user to specify one categorical variable and one numeric variable for plotting purposes.
 
 ```{r}
+#| eval: false
+#| echo: false
 
-#ggplot(your_census_tibble, aes(x = get(cat_var), y = get(num_var), weight = PWGTP)) + geom_boxplot()
+# switch above to true after completing code chunk
+
+ggplot(census_tib,
+       aes(x = cat_select, y = numeric_select, weight = PWGTP)) +
+  geom_boxplot()
 ```
-
