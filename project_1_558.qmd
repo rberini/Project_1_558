@@ -29,6 +29,7 @@ some placeholder text
 ### Build API
 
 v1 berini (outside of function)
+
 ```{r}
 #| eval: false
 #| echo: false
@@ -61,8 +62,8 @@ URL_base <- "https://api.census.gov/data/"
 URL_id = paste0(URL_base,year_select,"/acs/acs1/pums?get=PWGTP,",numeric_select,",",cat_select)
 ```
 
-
 v2 ferrand
+
 ```{r}
 #| eval: false
 #| echo: false
@@ -96,7 +97,6 @@ for (column in colnames(census_tib)){
   }
 }
 ```
-
 
 v3 ferrand
 
@@ -161,7 +161,6 @@ api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var 
 #make it so that geography level does something, condition it?
 #create a for loop to specify multiple data items
 ```
-
 
 ### Create Database
 
