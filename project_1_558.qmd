@@ -100,7 +100,6 @@ for (column in colnames(census_tib)){
 }
 ```
 
-
 THIS ONE WORKS
 
 ```{r}
