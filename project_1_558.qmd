@@ -7,7 +7,7 @@ editor: visual
 
 ## Project Overview
 
-Query the Public Use Microdata Sample (PUMS) Census API. Creates a function that allows the user to call the API with different combinations of variables. Provides numerical and graphical summaries.
+Query the Public Use Microdata Sample (PUMS) Census API. Creates a function that allows the user to call the API with different combinations of variables. Provides numerical and graphical summaries.Our goal is to write functions that will manipulate and process data sets that come from a census API. We’ll create generic functions to automatically summarize and plot certain returned data. Lastly, we’ll write up a document via quarto to describe our thought process and give examples of using the functions.
 
 ## Required Packages
 
@@ -28,102 +28,85 @@ some placeholder text
 
 ### Build API
 
+Creating median time table for JWAP and JWDP
+
+*Note to Robbie: I'm not actually using this in the function yet. Just trying to figure out how to calculate the median time per range and retain the factor code. We'll have to build this within the main function and write a lookup and replace routine*
+
+
+JWDP
 ```{r}
-#| eval: false
-#| echo: false
+URL_time <- "https://api.census.gov/data/2022/acs/acs1/pums/variables/JWDP.json"
+jwdp_data <- GET(URL_time)
 
-#v1 berini branch
-#(outside of any function)
-#does not evaluate or display code
+jwdp_time_data_2 <- fromJSON(rawToChar(jwdp_data$content))
+jwdp_time_data_3 <- as_tibble(jwdp_time_data_2$values$item)
+jwdp_time_table <- pivot_longer(jwdp_time_data_3,
+                         cols = 1:ncol(jwdp_time_data_3),
+                         names_to = "code",
+                         values_to = "range") |>
+  filter(code != 0) |>
+  separate_wider_delim(range, delim = " ", names = c("time1", "AMPM1", "to", "time2", "AMPM2")) 
 
-year_options <- c(2010:2019, 2021, 2022)
-numeric_options <- c("AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP")
-cat_options <- c("FER", "HHL", "HISPEED", "JWAP", "JWDP", "JWTRNS", "SCH", "SCHL", "SEX")
-geo_options <- c("All", "Region", "Division", "State")
+jwdp_time_table <- jwdp_time_table |>
+  mutate(median_time = hms::as_hms(
+    hms::parse_hm(jwdp_time_table$time1) +
+      ((hms::parse_hm(jwdp_time_table$time2) - hms::parse_hm(jwdp_time_table$time1)) / 2))) |>
+  select(code, median_time, everything()) |>
+    arrange(code)
 
-year_select <- ""
+jwdp_time_table$code <- as.numeric(jwdp_time_table$code)
 
-while (!(year_select %in% year_options)) {
-  year_select <- as.numeric(readline("What year do you select? "))
-}
+jwdp_time_table
+```
+JWAP
+```{r}
+URL_time_2 <- "https://api.census.gov/data/2022/acs/acs1/pums/variables/JWAP.json"
+jwap_data <- GET(URL_time_2)
 
-numeric_select <- ""
+jwap_time_data_2 <- fromJSON(rawToChar(jwap_data$content))
+jwap_time_data_3 <- as_tibble(jwap_time_data_2$values$item)
+jwap_time_table <- pivot_longer(jwap_time_data_3,
+                         cols = 1:ncol(jwap_time_data_3),
+                         names_to = "code",
+                         values_to = "range") |>
+  filter(code != 0) |>
+  separate_wider_delim(range, delim = " ", names = c("time1", "AMPM1", "to", "time2", "AMPM2")) 
 
-while (!(numeric_select %in% numeric_options)) {
-  numeric_select <- readline("What numeric variable do you select? ")
-}
+jwap_time_table <- jwap_time_table |>
+  mutate(median_time = hms::as_hms(
+    hms::parse_hm(jwap_time_table$time1) +
+      ((hms::parse_hm(jwap_time_table$time2) - hms::parse_hm(jwap_time_table$time1)) / 2))) |>
+  select(code, median_time, everything()) |>
+  arrange(code)
 
-cat_select <- ""
+jwap_time_table$code <- as.numeric(jwap_time_table$code)
 
-while (!(cat_select %in% cat_options)) {
-  cat_select <- readline("What categorical variable do you select? ")
-}
-
-URL_base <- "https://api.census.gov/data/"
-
-URL_id = paste0(URL_base,year_select,"/acs/acs1/pums?get=PWGTP,",numeric_select,",",cat_select)
+jwap_time_table
 ```
 
-```{r}
-#| eval: false
-#| echo: false
 
-#v2 ferrand branch
-#does not evaluate or display code
-
-valid_num_var <- c("AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP", "PWGTP")
-valid_cat_var <- c("FER", "HHL", "HISPEED", "JWAP", "JWDP", "JWTRNS", "SCH", "SCHL", "SEX")
-valid_geo_level <- c("All", "Region", "Division", "State")
-
-URL_base <- "https://api.census.gov/data/"
-
-numeric_select <- 
-
-#URL_id = paste0(URL_base,year_select,"/acs/acs1/pums?get=PWGTP,",numeric_select,",",cat_select)
-
-#URL_id <- "https://api.census.gov/data/2022/acs/acs1/pums?get=SEX,PWGTP&SCHL=24"
-URL_id <- "https://api.census.gov/data/2022/acs/acs1/pums?get=SEX,RAC1P&AGEP=30&for=division:9"
-
-census_df <- fromJSON(URL_id)
-
-census_tib <- census_df |>
-  as_tibble() |>
-  row_to_names(row_number = 1)
-
-
-for (column in colnames(census_tib)){
-  if (column %in% valid_num_var) {
-    census_tib[[column]] <- as.numeric(census_tib[[column]])
-  } else if (column %in% valid_cat_var) {
-    census_tib[[column]] <- as.factor(census_tib[[column]])
-  }
-}
-```
-
-THIS ONE WORKS
+Creating the API function
 
 ```{r}
-
-#v3 - ferrand branch
 
 surv_year <- c(2010:2022)
-valid_num_var <- c("AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP", "PWGTP")
+valid_num_var <- c("AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP")
+valid_date_var <- c("JWAP", "JWDP")
 valid_cat_var <- c("FER", "HHL", "HISPEED", "JWTRNS", "SCH", "SCHL", "SEX")
 valid_geo_level <- c("All", "Region", "Division", "State")
 
-api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var = "SEX", geo_level = "All", condition = NULL)
-{
-   if (surv_year < 2010 || surv_year > 2022) {
+api_query <- function(surv_year = "2022", num_var = "AGEP", cat_var = "SEX", geo_level = "All", condition = NULL) {
+  if (surv_year < 2010 || surv_year > 2022) {
     stop("Year must be between 2010 and 2022.")
    }
   if (any(!num_var %in% valid_num_var)) {
     stop("Invalid Numeric Variable")
     }
   if (any(!cat_var %in% valid_cat_var)) {
-        stop("Invalid Categorical Variable")
+    stop("Invalid Categorical Variable")
   }
-    if (any(!geo_level %in% valid_geo_level)) {
-        stop("Invalid Geography Level")
+  if (any(!geo_level %in% valid_geo_level)) {
+    stop("Invalid Geography Level")
     }
   
   num_var_string <- paste(num_var, collapse = ",")
@@ -138,24 +121,36 @@ api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var 
     URL_id <- paste0(URL_id, "&", condition_string)
   }
   
-  #AS DATETIME, AS DATE, AS TIME
   print(URL_id)
   
-  census_df <- fromJSON(URL_id)
+  
+  #call API and create database
+  
+  census_info <- GET(URL_id)
+  
+  census_df <- fromJSON(rawToChar(census_info$content))
   
   census_tib <- census_df |>
     as_tibble() |>
     row_to_names(row_number = 1)
   
+  census_tib$PWGTP <- as.numeric(census_tib$PWGTP)
   
   for (column in colnames(census_tib)) {
-    if (column %in% valid_num_var) {
+    if (column %in% valid_date_var) {
+      census_tib[[column]] <- as.numeric(census_tib[[column]])
+    } else if (column %in% valid_num_var) {
       census_tib[[column]] <- as.numeric(census_tib[[column]])
     } else if (column %in% valid_cat_var) {
       census_tib[[column]] <- as.factor(census_tib[[column]])
     }
   }
-  print(census_tib)
+  
+  # function for creating data should assign a class of census
+  
+  class(census_tib) <- c("census", class(census_tib))
+  
+  census_tib
 }
 
 
@@ -165,48 +160,28 @@ api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var 
 #create a for loop to specify multiple data items
 ```
 
-### Create Database
+### Obtaining Person Level Records
 
-some placeholder text
+The `PWGTP` variable actually represents the number of (people) observations there should be for a particular row.
 
-```{r}
-#| eval: false
-#| echo: false
+### Test the API Function
 
-# switch above to true after completing code chunk
-
-
-census_df <- fromJSON(URL_id)
-
-census_tib <- census_df |>
-  as_tibble() |>
-  row_to_names(row_number = 1)
-
-census_tib[[cat_select]] <- as.factor(census_tib[[cat_select]])
-census_tib[[numeric_select]] <- as.numeric(census_tib[[numeric_select]])
-census_tib$PWGTP <- as.numeric(census_tib$PWGTP)
-
-str(census_tib)
-
-
-# function for creating data should assign a class of census
-# class(your_tibble) <- c("census", class(your_tibble))
-class(census_tib) <- c("census", class(census_tib))
-```
-
-## Obtaining Person Level Records
-
-some placeholder text
+Run various combinations of inputs (including default) to test function
 
 ```{r}
-#| eval: false
-#| echo: false
+api_query()
 
-# switch above to true after completing code chunk
-
-
-# code check
 ```
+
+```{r}
+api_query(2016, num_var = c("GASP", "GRPIP"), "FER")
+```
+
+
+```{r}
+api_query(2021, "GASP", "HHL")
+```
+
 
 ## Writing a Generic Function for Summarizing
 
@@ -221,6 +196,8 @@ write a function that produces means and standard deviations for our numeric var
 #| echo: false
 
 # switch above to true after completing code chunk
+
+cen_summary <- function(tib, )
 
 mean(census_tib[[numeric_select]])
 ```
@@ -238,7 +215,7 @@ mean(census_tib[[numeric_select]])
 
 ### Graphical Summary
 
-Similarly, let’s create a generic plot() function for a census class tibble. Require the user to specify one categorical variable and one numeric variable for plotting purposes.
+Similarly, let’s create a generic `plot()` function for a census class tibble. Require the user to specify one categorical variable and one numeric variable for plotting purposes.
 
 ```{r}
 #| eval: false
@@ -246,7 +223,20 @@ Similarly, let’s create a generic plot() function for a census class tibble. R
 
 # switch above to true after completing code chunk
 
-ggplot(census_tib,
-       aes(x = cat_select, y = numeric_select, weight = PWGTP)) +
-  geom_boxplot()
+census_plot <- function(tib = census_call$census_tib, num_var = census_call$num_var[1], cat_var = census_call$cat_var[1]) {
+  ggplot(tib,
+       aes(x = get(cat_var), y = get(num_var), weight = PWGTP)) +
+    geom_boxplot()
+}
 ```
+
+Test `census_plot` function
+```{r}
+#| eval: false
+#| echo: false
+
+# switch above to true after completing code chunk
+
+census_plot()
+```
+
