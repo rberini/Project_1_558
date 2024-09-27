@@ -28,10 +28,13 @@ some placeholder text
 
 ### Build API
 
-v1 berini (outside of function)
 ```{r}
 #| eval: false
 #| echo: false
+
+#v1 berini branch
+#(outside of any function)
+#does not evaluate or display code
 
 year_options <- c(2010:2019, 2021, 2022)
 numeric_options <- c("AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP")
@@ -61,12 +64,12 @@ URL_base <- "https://api.census.gov/data/"
 URL_id = paste0(URL_base,year_select,"/acs/acs1/pums?get=PWGTP,",numeric_select,",",cat_select)
 ```
 
-
-v2 ferrand
 ```{r}
 #| eval: false
 #| echo: false
 
+#v2 ferrand branch
+#does not evaluate or display code
 
 valid_num_var <- c("AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP", "PWGTP")
 valid_cat_var <- c("FER", "HHL", "HISPEED", "JWAP", "JWDP", "JWTRNS", "SCH", "SCHL", "SEX")
@@ -97,15 +100,15 @@ for (column in colnames(census_tib)){
 }
 ```
 
-
-v3 ferrand
-
 THIS ONE WORKS
 
 ```{r}
+
+#v3 - ferrand branch
+
 surv_year <- c(2010:2022)
 valid_num_var <- c("AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP", "PWGTP")
-valid_cat_var <- c("FER", "HHL", "HISPEED", "JWAP", "JWDP", "JWTRNS", "SCH", "SCHL", "SEX")
+valid_cat_var <- c("FER", "HHL", "HISPEED", "JWTRNS", "SCH", "SCHL", "SEX")
 valid_geo_level <- c("All", "Region", "Division", "State")
 
 api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var = "SEX", geo_level = "All", condition = NULL)
@@ -161,7 +164,6 @@ api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var 
 #make it so that geography level does something, condition it?
 #create a for loop to specify multiple data items
 ```
-
 
 ### Create Database
 
