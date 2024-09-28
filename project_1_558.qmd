@@ -7,73 +7,135 @@ editor: visual
 
 ## Project Overview
 
-some placeholder text
+Our goal is to write functions that will manipulate and process data sets that come from a census API. Query the Public Use Microdata Sample (PUMS) Census API. Create a function that allows the user to call the API with different combinations of variables. Provide numerical and graphical summaries. We'll create generic functions to automatically summarize and plot certain returned data. Lastly, we'll write up a document via quarto to describe our thought process and give examples of using the functions.
 
 ## Required Packages
 
 Load required packages for project
 
-library(tidyverse)
-
-library(httr)
-
-library(jsonlite)
-
-library(tidycensus)
-
-```{r}
+```{r setup, message=FALSE, warning=FALSE}
 library(tidyverse)
 library(httr)
 library(jsonlite)
-library(tidycensus)
 library(janitor)
 library(quantreg)
+library(roxygen2)
 ```
 
 ## Data Processing
 
 some placeholder text
 
+Creating median time table for JWAP and JWDP
+
+\*Note to Robbie: We'll have to call these from the functions and write a join\*
+
+JWAP
+
 ```{r}
-valid_num_var <- c("AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP", "PWGTP")
-valid_cat_var <- c("FER", "HHL", "HISPEED", "JWAP", "JWDP", "JWTRNS", "SCH", "SCHL", "SEX")
-valid_geo_level <- c("All", "Region", "Division", "State")
+URL_jwap <- "https://api.census.gov/data/2022/acs/acs1/pums/variables/JWAP.json"
+jwap_time_table <- GET(URL_jwap)
 
-URL_base <- "https://api.census.gov/data/"
+jwap_time_table <- fromJSON(rawToChar(jwap_time_table$content))
+jwap_time_table <- as_tibble(jwap_time_table$values$item)
+jwap_time_table <- pivot_longer(jwap_time_table,
+                         cols = 1:ncol(jwap_time_table),
+                         names_to = "code",
+                         values_to = "range") |>
+  filter(code != 0) |>
+  separate_wider_delim(range, delim = " ", names = c("time1", "AMPM1", "to", "time2", "AMPM2")) 
 
-numeric_select <- 
+jwap_time_table <- jwap_time_table |>
+  mutate(median_time = if_else(
+    AMPM1 == "a.m.",
+    hms::as_hms(
+    hms::parse_hm(jwap_time_table$time1) +
+      ((hms::parse_hm(jwap_time_table$time2) -
+          hms::parse_hm(jwap_time_table$time1)) / 2)),
+     hms::as_hms(hms::parse_hm("12:00") +
+                   hms::parse_hm(jwap_time_table$time1) +
+                   ((hms::parse_hm(jwap_time_table$time2) -
+                       hms::parse_hm(jwap_time_table$time1)) / 2)))) |>
+  mutate(median_time = if_else(median_time > hms::as_hms("12:00:00") &
+                                 median_time < hms::as_hms("12:59:59") &
+                                 AMPM1 == "a.m.",
+                               median_time - hms::as_hms("12:00:00"),
+                               median_time)) |>
+  select(code, median_time) |>
+  arrange(median_time) |>
+  add_row(code = "0", median_time = hms::as_hms(NA))
 
-#URL_id = paste0(URL_base,year_select,"/acs/acs1/pums?get=PWGTP,",numeric_select,",",cat_select)
+jwap_time_table$code <- as.numeric(jwap_time_table$code)
 
-#URL_id <- "https://api.census.gov/data/2022/acs/acs1/pums?get=SEX,PWGTP&SCHL=24"
-URL_id <- "https://api.census.gov/data/2022/acs/acs1/pums?get=SEX,RAC1P&AGEP=30&for=division:9"
-
-census_df <- fromJSON(URL_id)
-
-census_tib <- census_df |>
-  as_tibble() |>
-  row_to_names(row_number = 1)
-
-
-for (column in colnames(census_tib)){
-  if (column %in% valid_num_var) {
-    census_tib[[column]] <- as.numeric(census_tib[[column]])
-  } else if (column %in% valid_cat_var) {
-    census_tib[[column]] <- as.factor(census_tib[[column]])
-  }
-}
+jwap_time_table
 ```
 
-THIS ONE WORKS
+JWDP
 
 ```{r}
-surv_year <- c(2010:2022)
-valid_num_var <- c("AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP", "PWGTP")
-valid_cat_var <- c("FER", "HHL", "HISPEED", "JWAP", "JWDP", "JWTRNS", "SCH", "SCHL", "SEX")
-valid_geo_level <- c("ALL", "REGION", "DIVISION", "STATE")
+URL_jwdp <- "https://api.census.gov/data/2022/acs/acs1/pums/variables/JWDP.json"
+jwdp_time_table <- GET(URL_jwdp)
 
-api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var = "SEX", geo_level = "ALL", condition = NULL, geo_subset = NULL)
+jwdp_time_table <- fromJSON(rawToChar(jwdp_time_table$content))
+jwdp_time_table <- as_tibble(jwdp_time_table$values$item)
+jwdp_time_table <- pivot_longer(jwdp_time_table,
+                         cols = 1:ncol(jwdp_time_table),
+                         names_to = "code",
+                         values_to = "range") |>
+  filter(code != 0) |>
+  separate_wider_delim(range, delim = " ", names = c("time1", "AMPM1", "to", "time2", "AMPM2")) 
+
+jwdp_time_table <- jwdp_time_table |>
+  mutate(median_time = if_else(
+    AMPM1 == "a.m.",
+    hms::as_hms(
+    hms::parse_hm(jwdp_time_table$time1) +
+      ((hms::parse_hm(jwdp_time_table$time2) -
+          hms::parse_hm(jwdp_time_table$time1)) / 2)),
+     hms::as_hms(hms::parse_hm("12:00") +
+                   hms::parse_hm(jwdp_time_table$time1) +
+                   ((hms::parse_hm(jwdp_time_table$time2) -
+                       hms::parse_hm(jwdp_time_table$time1)) / 2)))) |>
+  mutate(median_time = if_else(median_time > hms::as_hms("12:00:00") &
+                                 median_time < hms::as_hms("12:59:59") &
+                                 AMPM1 == "a.m.",
+                               median_time - hms::as_hms("12:00:00"),
+                               median_time)) |>
+  select(code, median_time) |>
+  arrange(median_time) |>
+  add_row(code = "0", median_time = hms::as_hms(NA))
+
+jwdp_time_table$code <- as.numeric(jwdp_time_table$code)
+
+jwdp_time_table
+```
+
+Creating the API Function
+
+```{r}
+#' setup global variables to be returned
+#' @noRd
+
+census_tib <- as_tibble(data.frame())
+num_var <- ""
+cat_var <- ""
+
+#' Begin query building
+#' Numeric variable PWGTP is required for function and always called so is not included as a default that can be overwritten
+#' @noRd
+
+
+api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var = "SEX", geo_level = "ALL", condition = NULL, geo_subset = "STATE:11")
 {
+  
+  
+  valid_num_var <- c("AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP", "PWGTP")
+  valid_date_var <- c("JWAP", "JWDP")
+  valid_cat_var <- c("FER", "HHL", "HISPEED", "JWTRNS", "SCH", "SCHL", "SEX")
+  valid_geo_level <- c("ALL", "REGION", "DIVISION", "STATE")
+  
+  #ensure user selection is within permissible values
+
    if (surv_year < 2010 || surv_year > 2022) {
     stop("Year must be between 2010 and 2022.")
    }
@@ -88,8 +150,11 @@ api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var 
         stop("Invalid Geography Level")
     }
   
+  
+  #output usable strings for the numerical, categorical, and geo level variables
   num_var_string <- paste(unique(num_var), collapse = ",")
   cat_var_string <- paste(unique(cat_var), collapse = ",")
+  
   if(!geo_level == "ALL") {
      geo_level_string <- paste(unique(geo_level), collapse = ",") 
   }
@@ -113,30 +178,73 @@ api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var 
   }
 
   
-  #AS DATETIME, AS DATE, AS TIME
-  
-  
   parsed_url <- parse_url(URL_id)
     parsed_url$query$get <- paste(unique(unlist(strsplit(parsed_url$query$get, ",")))[!unique(unlist(strsplit(parsed_url$query$get, ","))) %in% names(parsed_url$query)], collapse = ",")
   URL_id <- gsub("%2C", ",", build_url(parsed_url))
   print(URL_id)
 
   
-  census_df <- fromJSON(URL_id)
+  census_info <- GET(URL_id)
+  census_df <- fromJSON(rawToChar(census_info$content))
   
   census_tib <- census_df |>
     as_tibble() |>
     row_to_names(row_number = 1)
   
   
-  for (column in colnames(census_tib)) {
-    if (column %in% valid_num_var) {
+    for (column in colnames(census_tib)) {
+    if (column %in% valid_date_var) {
+      census_tib[[column]] <- as.numeric(census_tib[[column]])
+    } else if (column %in% valid_num_var) {
       census_tib[[column]] <- as.numeric(census_tib[[column]])
     } else if (column %in% valid_cat_var) {
       census_tib[[column]] <- as.factor(census_tib[[column]])
     }
   }
+  
+  
+  if(str_detect(URL_id,"JWAP")) {
+    census_tib <- census_tib |>
+      left_join(
+        jwap_time_table,
+        by = c("JWAP" = "code")
+        ) |>
+      select(-JWAP) |>
+      rename(JWAP = median_time)
+    }
+  
+    if(str_detect(URL_id,"JWDP")) {
+    census_tib <- census_tib |>
+      left_join(
+        jwap_time_table,
+        by = c("JWDP" = "code")
+        ) |>
+      select(-JWDP) |>
+      rename(JWDP = median_time)
+    }
+  
+  #' Function for creating data assigns a class of census to resulting tibble
+  #' @noRd
+  
+  class(census_tib) <- c("census", class(census_tib))
+  
+  #' Ensure resulting tibble (census_tib) and selected variables are returned to the global environment for use in other functions and analysis
+  #' Superassigmment operator (<<-) is intentional to ensure local variables are passed to the global environment
+  #' A list including num_var, cat_var and census_tib is returned for redudancy and convenience so user assign function to an object and then specify the corresponding version of the variable created
+  #' @noRd
+  
+  num_var <<- num_var
+  cat_var <<- cat_var
+  census_tib <<- census_tib
+  
   print(census_tib)
+  
+    return(list(
+    num_var = num_var,
+    cat_var = cat_var,
+    census_tib = census_tib
+    ))
+  
 }
 
 ```
@@ -149,9 +257,44 @@ multi_api <- function(surv_years, ...) {
 }
 ```
 
+### Test the API Function
+
+```{r}
+default_query <- api_query()
+default_query
+```
+
+```{r}
+api_query(2016, num_var = c("GASP", "GRPIP", "JWAP"), "FER")
+```
+
+```{r}
+default_nc <- api_query(geo_level = "State", geo_code = "37")
+default_nc
+```
+
+```{r}
+default_masters_nc <- api_query(
+  geo_level = "State",
+  geo_code = "37",
+  condition = "SCHL=22"
+  )
+default_masters_nc
+```
+
+Final run to reflect assigned \`state\`: 11 / DC
+
+```{r}
+default_dc <- api_query(
+    geo_level = "State",
+    geo_code = "11"
+)
+default_dc
+```
+
 ## Obtaining Person Level Records
 
-some placeholder text
+The \`PWGTP\` variable actually represents the number of (people) observations there should be for a particular row.
 
 ```{r}
 
@@ -166,13 +309,23 @@ some placeholder text
 write a function that produces means and standard deviations for our numeric variable(s) and counts for our categorical variable(s).
 
 ```{r}
+census_summary <- function(tib = census_tib, cat_var, num_var) {
+  sample_mean <- sum(tib[[num_var]] * tib$PWGTP)/sum(tib$PWGTP)
+  sample_sd <- sqrt(sum((tib[[num_var]]^2)*tib$PWGTP)/sum(tib$PWGTP)-sample_mean^2)
+  
+  counts <- tib |>
+    group_by(tib[[cat_var]]) |>
+    summarise(n = n())
 
+  return(list(sample_mean = sample_mean, sample_sd = sample_sd, counts = counts))
+}
 ```
 
 Test out this function by running summary(*your_census_tibble*) on something you've returned from your census API function.
 
 ```{r}
-
+cen_sum <- census_summary(cat_var = "SEX", num_var = "PWGTP")
+print(cen_sum)
 ```
 
 ### Graphical Summary
@@ -181,5 +334,15 @@ Similarly, let's create a generic plot() function for a census class tibble. Req
 
 ```{r}
 
-#ggplot(your_census_tibble, aes(x = get(cat_var), y = get(num_var), weight = PWGTP)) + geom_boxplot()
+census_plot <- function() {
+  ggplot(census_tib,
+       aes(x = .data[[cat_var]], y = .data[[num_var]], weight = PWGTP)) +
+    geom_boxplot()
+}
+```
+
+Test \`census_plot\` function
+
+```{r}
+census_plot()
 ```
