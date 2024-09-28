@@ -127,7 +127,7 @@ cat_var <- ""
 #' Numeric variable PWGTP is required for function and always called so is not included as a default that can be overwritten
 #' @noRd
 
-api_query <- function(surv_year = "2022", num_var = "AGEP", cat_var = "SEX", geo_level = "All", condition = NULL) {
+api_query <- function(surv_year = "2022", num_var = "AGEP", cat_var = "SEX", geo_level = "All", geo_code = "*", condition = NULL) {
 
   #numeric variable PWGTP is required for function and always called
   valid_num_var <- c("AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP")
@@ -157,6 +157,11 @@ api_query <- function(surv_year = "2022", num_var = "AGEP", cat_var = "SEX", geo
   URL_base <- "https://api.census.gov/data/"
   #construct api url to be called; PWGTP is required and always included in call
   URL_id <- paste0(URL_base, surv_year, "/acs/acs1/pums?get=PWGTP,", num_var_string, ",", cat_var_string)
+  
+  if(geo_level != "All") {
+    geo_level <- tolower(geo_level)
+    URL_id <- paste0(URL_id, "&for=", geo_level, ":", geo_code)
+  }
   
   if (!is.null(condition)) {
     condition_string <- paste(condition, collapse = "&")
@@ -233,8 +238,19 @@ default_query
 ```
 
 ```{r}
-#api_query(2021, "GASP", "HHL")
+default_nc <- api_query(geo_level = "State", geo_code = "37")
+default_nc
 ```
+
+```{r}
+default_masters_nc <- api_query(
+  geo_level = "State",
+  geo_code = "37",
+  condition = "SCHL=22"
+  )
+default_masters_nc
+```
+
 
 ## Writing a Generic Function for Summarizing
 
@@ -272,9 +288,9 @@ Similarly, let’s create a generic `plot()` function for a census class tibble.
 
 ```{r}
 
-census_plot <- function(tib, num_var, cat_var) {
-  ggplot(tib,
-       aes(x = cat_var, y = num_var, weight = tib$PWGTP)) +
+census_plot <- function() {
+  ggplot(census_tib,
+       aes(x = .data[[cat_var]], y = .data[[num_var]], weight = PWGTP)) +
     geom_boxplot()
 }
 ```
@@ -282,12 +298,6 @@ census_plot <- function(tib, num_var, cat_var) {
 Test `census_plot` function
 
 ```{r}
-#| eval: false
-#| echo: false
 
-# switch above to true after completing code chunk
-# taking too long to run; maybe reduce dataset
-
-
-census_plot(default_query$census_tib, default_query$num_var, default_query$cat_var)
+census_plot()
 ```
