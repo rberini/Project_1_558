@@ -276,7 +276,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">#' setup global variables to be returned</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co">#' @noRd</span></span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>census_tib <span class="ot">&lt;-</span> <span class="fu">as_tibble</span>(<span class="fu">list</span>())</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>census_tib <span class="ot">&lt;-</span> <span class="fu">as_tibble</span>(<span class="fu">data.frame</span>())</span>
 <span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>num_var <span class="ot">&lt;-</span> <span class="st">""</span></span>
 <span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>cat_var <span class="ot">&lt;-</span> <span class="st">""</span></span>
 <span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
@@ -506,17 +506,53 @@ $census_tib
 # A tibble: 8,108 × 5
    PWGTP  AGEP SEX   SCHL  state
    &lt;dbl&gt; &lt;dbl&gt; &lt;fct&gt; &lt;fct&gt; &lt;chr&gt;
- 1    41    55 2     22    37   
- 2    42    66 1     22    37   
- 3    58    64 1     22    37   
- 4    35    64 1     22    37   
- 5    35    79 2     22    37   
- 6    17    80 2     22    37   
- 7    20    64 1     22    37   
- 8    10    80 2     22    37   
- 9    10    82 1     22    37   
-10    31    68 2     22    37   
+ 1    22    76 2     22    37   
+ 2   290    47 2     22    37   
+ 3    22    57 1     22    37   
+ 4    40    93 1     22    37   
+ 5    70    42 1     22    37   
+ 6    47    47 1     22    37   
+ 7   122    33 2     22    37   
+ 8   105    35 1     22    37   
+ 9    49    69 2     22    37   
+10    54    63 1     22    37   
 # ℹ 8,098 more rows</code></pre>
+</div>
+</div>
+<p>Final run to reflect assigned <code>state</code>: 11 / DC</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>default_dc <span class="ot">&lt;-</span> <span class="fu">api_query</span>(</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">geo_level =</span> <span class="st">"State"</span>,</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">geo_code =</span> <span class="st">"11"</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "AGEP"
+[1] "SEX"
+[1] "https://api.census.gov/data/2022/acs/acs1/pums?get=PWGTP,AGEP,SEX&amp;for=state:11"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>default_dc</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$num_var
+[1] "AGEP"
+
+$cat_var
+[1] "SEX"
+
+$census_tib
+# A tibble: 6,718 × 4
+   PWGTP  AGEP SEX   state
+   &lt;dbl&gt; &lt;dbl&gt; &lt;fct&gt; &lt;chr&gt;
+ 1    81    18 2     11   
+ 2    67    18 2     11   
+ 3    85    19 1     11   
+ 4    51    18 1     11   
+ 5    56    23 2     11   
+ 6    80    20 1     11   
+ 7   213    34 2     11   
+ 8   175    66 1     11   
+ 9    84    24 1     11   
+10    62    19 2     11   
+# ℹ 6,708 more rows</code></pre>
 </div>
 </div>
 </section>
@@ -528,34 +564,34 @@ $census_tib
 <h3 class="anchored" data-anchor-id="numeric-summary">Numeric Summary</h3>
 <p>write a function that produces means and standard deviations for our numeric variable(s) and counts for our categorical variable(s).</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>census_summary <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">tib =</span> census_tib, cat_var, num_var) {</span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  sample_mean <span class="ot">&lt;-</span> <span class="fu">sum</span>(tib[[num_var]] <span class="sc">*</span> tib<span class="sc">$</span>PWGTP)<span class="sc">/</span><span class="fu">sum</span>(tib<span class="sc">$</span>PWGTP)</span>
-<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  sample_sd <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">sum</span>((tib[[num_var]]<span class="sc">^</span><span class="dv">2</span>)<span class="sc">*</span>tib<span class="sc">$</span>PWGTP)<span class="sc">/</span><span class="fu">sum</span>(tib<span class="sc">$</span>PWGTP)<span class="sc">-</span>sample_mean<span class="sc">^</span><span class="dv">2</span>)</span>
-<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>  counts <span class="ot">&lt;-</span> tib <span class="sc">|&gt;</span></span>
-<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(tib[[cat_var]]) <span class="sc">|&gt;</span></span>
-<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarise</span>(<span class="at">n =</span> <span class="fu">n</span>())</span>
-<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">list</span>(<span class="at">sample_mean =</span> sample_mean, <span class="at">sample_sd =</span> sample_sd, <span class="at">counts =</span> counts))</span>
-<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>census_summary <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">tib =</span> census_tib, cat_var, num_var) {</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  sample_mean <span class="ot">&lt;-</span> <span class="fu">sum</span>(tib[[num_var]] <span class="sc">*</span> tib<span class="sc">$</span>PWGTP)<span class="sc">/</span><span class="fu">sum</span>(tib<span class="sc">$</span>PWGTP)</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>  sample_sd <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">sum</span>((tib[[num_var]]<span class="sc">^</span><span class="dv">2</span>)<span class="sc">*</span>tib<span class="sc">$</span>PWGTP)<span class="sc">/</span><span class="fu">sum</span>(tib<span class="sc">$</span>PWGTP)<span class="sc">-</span>sample_mean<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>  counts <span class="ot">&lt;-</span> tib <span class="sc">|&gt;</span></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(tib[[cat_var]]) <span class="sc">|&gt;</span></span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarise</span>(<span class="at">n =</span> <span class="fu">n</span>())</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">list</span>(<span class="at">sample_mean =</span> sample_mean, <span class="at">sample_sd =</span> sample_sd, <span class="at">counts =</span> counts))</span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Test out this function by running summary (<em>your_census_tibble</em>) on something you’ve returned from your census API function.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>cen_sum <span class="ot">&lt;-</span> <span class="fu">census_summary</span>(<span class="at">cat_var =</span> <span class="st">"SEX"</span>, <span class="at">num_var =</span> <span class="st">"AGEP"</span>)</span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(cen_sum)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>cen_sum <span class="ot">&lt;-</span> <span class="fu">census_summary</span>(<span class="at">cat_var =</span> <span class="st">"SEX"</span>, <span class="at">num_var =</span> <span class="st">"AGEP"</span>)</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(cen_sum)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>$sample_mean
-[1] 50.78927
+[1] 37.05794
 
 $sample_sd
-[1] 15.89714
+[1] 21.39444
 
 $counts
 # A tibble: 2 × 2
   `tib[[cat_var]]`     n
   &lt;fct&gt;            &lt;int&gt;
-1 1                 3405
-2 2                 4703</code></pre>
+1 1                 3135
+2 2                 3583</code></pre>
 </div>
 </div>
 </section>
@@ -563,19 +599,19 @@ $counts
 <h3 class="anchored" data-anchor-id="graphical-summary">Graphical Summary</h3>
 <p>Similarly, let’s create a generic <code>plot()</code> function for a census class tibble. Require the user to specify one categorical variable and one numeric variable for plotting purposes.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>census_plot <span class="ot">&lt;-</span> <span class="cf">function</span>() {</span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(census_tib,</span>
-<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>       <span class="fu">aes</span>(<span class="at">x =</span> .data[[cat_var]], <span class="at">y =</span> .data[[num_var]], <span class="at">weight =</span> PWGTP)) <span class="sc">+</span></span>
-<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_boxplot</span>()</span>
-<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>census_plot <span class="ot">&lt;-</span> <span class="cf">function</span>() {</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(census_tib,</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>       <span class="fu">aes</span>(<span class="at">x =</span> .data[[cat_var]], <span class="at">y =</span> .data[[num_var]], <span class="at">weight =</span> PWGTP)) <span class="sc">+</span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_boxplot</span>()</span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Test <code>census_plot</code> function</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">census_plot</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">census_plot</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="project_1_558_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="project_1_558_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
