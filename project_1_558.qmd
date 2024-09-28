@@ -33,6 +33,7 @@ Creating median time table for JWAP and JWDP
 *Note to Robbie: We'll have to call these from the functions and write a join*
 
 JWAP
+
 ```{r}
 URL_jwap <- "https://api.census.gov/data/2022/acs/acs1/pums/variables/JWAP.json"
 jwap_time_table <- GET(URL_jwap)
@@ -70,7 +71,9 @@ jwap_time_table$code <- as.numeric(jwap_time_table$code)
 
 jwap_time_table
 ```
+
 JWDP
+
 ```{r}
 URL_jwdp <- "https://api.census.gov/data/2022/acs/acs1/pums/variables/JWDP.json"
 jwdp_time_table <- GET(URL_jwdp)
@@ -109,7 +112,6 @@ jwdp_time_table$code <- as.numeric(jwdp_time_table$code)
 jwdp_time_table
 ```
 
-
 Creating the API function
 
 ```{r}
@@ -119,6 +121,8 @@ valid_num_var <- c("AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP")
 valid_date_var <- c("JWAP", "JWDP")
 valid_cat_var <- c("FER", "HHL", "HISPEED", "JWTRNS", "SCH", "SCHL", "SEX")
 valid_geo_level <- c("All", "Region", "Division", "State")
+
+census_tib <- as_tibble(list())
 
 api_query <- function(surv_year = "2022", num_var = "AGEP", cat_var = "SEX", geo_level = "All", condition = NULL) {
   if (surv_year < 2010 || surv_year > 2022) {
@@ -175,9 +179,13 @@ api_query <- function(surv_year = "2022", num_var = "AGEP", cat_var = "SEX", geo
   
   class(census_tib) <- c("census", class(census_tib))
   
-  return(list(num_var = num_var,
-              cat_var = cat_var,
-              census_tib = census_tib))
+  census_tib <<- census_tib
+  
+  return(list(
+    num_var = num_var,
+    cat_var = cat_var,
+    census_tib = census_tib
+  ))
 }
 
 
@@ -205,11 +213,9 @@ default_query
 #api_query(2016, num_var = c("GASP", "GRPIP"), "FER")
 ```
 
-
 ```{r}
 #api_query(2021, "GASP", "HHL")
 ```
-
 
 ## Writing a Generic Function for Summarizing
 
@@ -255,6 +261,7 @@ census_plot <- function(tib, num_var, cat_var) {
 ```
 
 Test `census_plot` function
+
 ```{r}
 #| eval: false
 #| echo: false
@@ -265,4 +272,3 @@ Test `census_plot` function
 
 census_plot(default_query$census_tib, default_query$num_var, default_query$cat_var)
 ```
-
