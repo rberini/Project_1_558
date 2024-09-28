@@ -30,58 +30,83 @@ some placeholder text
 
 Creating median time table for JWAP and JWDP
 
-*Note to Robbie: I'm not actually using this in the function yet. Just trying to figure out how to calculate the median time per range and retain the factor code. We'll have to build this within the main function and write a lookup and replace routine*
+*Note to Robbie: We'll have to call these from the functions and write a join*
 
-
-JWDP
-```{r}
-URL_time <- "https://api.census.gov/data/2022/acs/acs1/pums/variables/JWDP.json"
-jwdp_data <- GET(URL_time)
-
-jwdp_time_data_2 <- fromJSON(rawToChar(jwdp_data$content))
-jwdp_time_data_3 <- as_tibble(jwdp_time_data_2$values$item)
-jwdp_time_table <- pivot_longer(jwdp_time_data_3,
-                         cols = 1:ncol(jwdp_time_data_3),
-                         names_to = "code",
-                         values_to = "range") |>
-  filter(code != 0) |>
-  separate_wider_delim(range, delim = " ", names = c("time1", "AMPM1", "to", "time2", "AMPM2")) 
-
-jwdp_time_table <- jwdp_time_table |>
-  mutate(median_time = hms::as_hms(
-    hms::parse_hm(jwdp_time_table$time1) +
-      ((hms::parse_hm(jwdp_time_table$time2) - hms::parse_hm(jwdp_time_table$time1)) / 2))) |>
-  select(code, median_time, everything()) |>
-    arrange(code)
-
-jwdp_time_table$code <- as.numeric(jwdp_time_table$code)
-
-jwdp_time_table
-```
 JWAP
 ```{r}
-URL_time_2 <- "https://api.census.gov/data/2022/acs/acs1/pums/variables/JWAP.json"
-jwap_data <- GET(URL_time_2)
+URL_jwap <- "https://api.census.gov/data/2022/acs/acs1/pums/variables/JWAP.json"
+jwap_time_table <- GET(URL_jwap)
 
-jwap_time_data_2 <- fromJSON(rawToChar(jwap_data$content))
-jwap_time_data_3 <- as_tibble(jwap_time_data_2$values$item)
-jwap_time_table <- pivot_longer(jwap_time_data_3,
-                         cols = 1:ncol(jwap_time_data_3),
+jwap_time_table <- fromJSON(rawToChar(jwap_time_table$content))
+jwap_time_table <- as_tibble(jwap_time_table$values$item)
+jwap_time_table <- pivot_longer(jwap_time_table,
+                         cols = 1:ncol(jwap_time_table),
                          names_to = "code",
                          values_to = "range") |>
   filter(code != 0) |>
   separate_wider_delim(range, delim = " ", names = c("time1", "AMPM1", "to", "time2", "AMPM2")) 
 
 jwap_time_table <- jwap_time_table |>
-  mutate(median_time = hms::as_hms(
+  mutate(median_time = if_else(
+    AMPM1 == "a.m.",
+    hms::as_hms(
     hms::parse_hm(jwap_time_table$time1) +
-      ((hms::parse_hm(jwap_time_table$time2) - hms::parse_hm(jwap_time_table$time1)) / 2))) |>
-  select(code, median_time, everything()) |>
-  arrange(code)
+      ((hms::parse_hm(jwap_time_table$time2) -
+          hms::parse_hm(jwap_time_table$time1)) / 2)),
+     hms::as_hms(hms::parse_hm("12:00") +
+                   hms::parse_hm(jwap_time_table$time1) +
+                   ((hms::parse_hm(jwap_time_table$time2) -
+                       hms::parse_hm(jwap_time_table$time1)) / 2)))) |>
+  mutate(median_time = if_else(median_time > hms::as_hms("12:00:00") &
+                                 median_time < hms::as_hms("12:59:59") &
+                                 AMPM1 == "a.m.",
+                               median_time - hms::as_hms("12:00:00"),
+                               median_time)) |>
+  select(code, median_time) |>
+  arrange(median_time) |>
+  add_row(code = "0", median_time = hms::as_hms(NA))
 
 jwap_time_table$code <- as.numeric(jwap_time_table$code)
 
 jwap_time_table
+```
+JWDP
+```{r}
+URL_jwdp <- "https://api.census.gov/data/2022/acs/acs1/pums/variables/JWDP.json"
+jwdp_time_table <- GET(URL_jwdp)
+
+jwdp_time_table <- fromJSON(rawToChar(jwdp_time_table$content))
+jwdp_time_table <- as_tibble(jwdp_time_table$values$item)
+jwdp_time_table <- pivot_longer(jwdp_time_table,
+                         cols = 1:ncol(jwdp_time_table),
+                         names_to = "code",
+                         values_to = "range") |>
+  filter(code != 0) |>
+  separate_wider_delim(range, delim = " ", names = c("time1", "AMPM1", "to", "time2", "AMPM2")) 
+
+jwdp_time_table <- jwdp_time_table |>
+  mutate(median_time = if_else(
+    AMPM1 == "a.m.",
+    hms::as_hms(
+    hms::parse_hm(jwdp_time_table$time1) +
+      ((hms::parse_hm(jwdp_time_table$time2) -
+          hms::parse_hm(jwdp_time_table$time1)) / 2)),
+     hms::as_hms(hms::parse_hm("12:00") +
+                   hms::parse_hm(jwdp_time_table$time1) +
+                   ((hms::parse_hm(jwdp_time_table$time2) -
+                       hms::parse_hm(jwdp_time_table$time1)) / 2)))) |>
+  mutate(median_time = if_else(median_time > hms::as_hms("12:00:00") &
+                                 median_time < hms::as_hms("12:59:59") &
+                                 AMPM1 == "a.m.",
+                               median_time - hms::as_hms("12:00:00"),
+                               median_time)) |>
+  select(code, median_time) |>
+  arrange(median_time) |>
+  add_row(code = "0", median_time = hms::as_hms(NA))
+
+jwdp_time_table$code <- as.numeric(jwdp_time_table$code)
+
+jwdp_time_table
 ```
 
 
@@ -150,7 +175,9 @@ api_query <- function(surv_year = "2022", num_var = "AGEP", cat_var = "SEX", geo
   
   class(census_tib) <- c("census", class(census_tib))
   
-  census_tib
+  return(list(num_var = num_var,
+              cat_var = cat_var,
+              census_tib = census_tib))
 }
 
 
@@ -169,17 +196,18 @@ The `PWGTP` variable actually represents the number of (people) observations the
 Run various combinations of inputs (including default) to test function
 
 ```{r}
-api_query()
+default_query <- api_query()
+default_query
 
 ```
 
 ```{r}
-api_query(2016, num_var = c("GASP", "GRPIP"), "FER")
+#api_query(2016, num_var = c("GASP", "GRPIP"), "FER")
 ```
 
 
 ```{r}
-api_query(2021, "GASP", "HHL")
+#api_query(2021, "GASP", "HHL")
 ```
 
 
@@ -218,14 +246,10 @@ mean(census_tib[[numeric_select]])
 Similarly, let’s create a generic `plot()` function for a census class tibble. Require the user to specify one categorical variable and one numeric variable for plotting purposes.
 
 ```{r}
-#| eval: false
-#| echo: false
 
-# switch above to true after completing code chunk
-
-census_plot <- function(tib = census_call$census_tib, num_var = census_call$num_var[1], cat_var = census_call$cat_var[1]) {
+census_plot <- function(tib, num_var, cat_var) {
   ggplot(tib,
-       aes(x = get(cat_var), y = get(num_var), weight = PWGTP)) +
+       aes(x = cat_var, y = num_var, weight = tib$PWGTP)) +
     geom_boxplot()
 }
 ```
@@ -236,7 +260,9 @@ Test `census_plot` function
 #| echo: false
 
 # switch above to true after completing code chunk
+# taking too long to run; maybe reduce dataset
 
-census_plot()
+
+census_plot(default_query$census_tib, default_query$num_var, default_query$cat_var)
 ```
 
