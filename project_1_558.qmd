@@ -234,7 +234,7 @@ default_query
 ```
 
 ```{r}
-#api_query(2016, num_var = c("GASP", "GRPIP"), "FER")
+api_query(2016, num_var = c("GASP", "GRPIP"), "FER")
 ```
 
 ```{r}
@@ -251,7 +251,6 @@ default_masters_nc <- api_query(
 default_masters_nc
 ```
 
-
 ## Writing a Generic Function for Summarizing
 
 some placeholder text
@@ -261,25 +260,23 @@ some placeholder text
 write a function that produces means and standard deviations for our numeric variable(s) and counts for our categorical variable(s).
 
 ```{r}
-#| eval: false
-#| echo: false
+census_summary <- function(tib = census_tib, cat_var, num_var) {
+  sample_mean <- sum(tib[[num_var]] * tib$PWGTP)/sum(tib$PWGTP)
+  sample_sd <- sqrt(sum((tib[[num_var]]^2)*tib$PWGTP)/sum(tib$PWGTP)-sample_mean^2)
+  
+  counts <- tib |>
+    group_by(tib[[cat_var]]) |>
+    summarise(n = n())
 
-# switch above to true after completing code chunk
-
-cen_summary <- function(tib, )
-
-mean(census_tib[[numeric_select]])
+  return(list(sample_mean = sample_mean, sample_sd = sample_sd, counts = counts))
+}
 ```
 
-Test out this function by running summary(*your_census_tibble*) on something you’ve returned from your census API function.
+Test out this function by running summary (*your_census_tibble*) on something you’ve returned from your census API function.
 
 ```{r}
-#| eval: false
-#| echo: false
-
-# switch above to true after completing code chunk
-
-mean(census_tib[[numeric_select]])
+cen_sum <- census_summary(cat_var = "SEX", num_var = "AGEP")
+print(cen_sum)
 ```
 
 ### Graphical Summary
