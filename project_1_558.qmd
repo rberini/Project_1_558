@@ -7,7 +7,7 @@ editor: visual
 
 ## Project Overview
 
-Query the Public Use Microdata Sample (PUMS) Census API. Creates a function that allows the user to call the API with different combinations of variables. Provides numerical and graphical summaries.Our goal is to write functions that will manipulate and process data sets that come from a census API. We’ll create generic functions to automatically summarize and plot certain returned data. Lastly, we’ll write up a document via quarto to describe our thought process and give examples of using the functions.
+Our goal is to write functions that will manipulate and process data sets that come from a census API. Query the Public Use Microdata Sample (PUMS) Census API. Create a function that allows the user to call the API with different combinations of variables. Provide numerical and graphical summaries. We’ll create generic functions to automatically summarize and plot certain returned data. Lastly, we’ll write up a document via quarto to describe our thought process and give examples of using the functions.
 
 ## Required Packages
 
@@ -17,9 +17,9 @@ Load required packages for project
 library(tidyverse)
 library(httr)
 library(jsonlite)
-library(tidycensus)
 library(janitor)
 library(quantreg)
+library(roxygen2)
 ```
 
 ## Data Processing
@@ -116,15 +116,26 @@ Creating the API function
 
 ```{r}
 
-surv_year <- c(2010:2022)
-valid_num_var <- c("AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP")
-valid_date_var <- c("JWAP", "JWDP")
-valid_cat_var <- c("FER", "HHL", "HISPEED", "JWTRNS", "SCH", "SCHL", "SEX")
-valid_geo_level <- c("All", "Region", "Division", "State")
+#' setup global variables to be returned
+#' @noRd
 
 census_tib <- as_tibble(list())
+num_var <- ""
+cat_var <- ""
+
+#' Begin query building
+#' Numeric variable PWGTP is required for function and always called so is not included as a default that can be overwritten
+#' @noRd
 
 api_query <- function(surv_year = "2022", num_var = "AGEP", cat_var = "SEX", geo_level = "All", condition = NULL) {
+
+  #numeric variable PWGTP is required for function and always called
+  valid_num_var <- c("AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP")
+  valid_date_var <- c("JWAP", "JWDP")
+  valid_cat_var <- c("FER", "HHL", "HISPEED", "JWTRNS", "SCH", "SCHL", "SEX")
+  valid_geo_level <- c("All", "Region", "Division", "State")
+  
+  #ensure user selection is within permissible values
   if (surv_year < 2010 || surv_year > 2022) {
     stop("Year must be between 2010 and 2022.")
    }
@@ -138,11 +149,13 @@ api_query <- function(surv_year = "2022", num_var = "AGEP", cat_var = "SEX", geo
     stop("Invalid Geography Level")
     }
   
+  #create url string
   num_var_string <- paste(num_var, collapse = ",")
-  print(num_var_string)
+  print(num_var_string) #display num_var selection while executing
   cat_var_string <- paste(cat_var, collapse = ",")
-  print(cat_var_string)
+  print(cat_var_string) #display cat_var selection while executing
   URL_base <- "https://api.census.gov/data/"
+  #construct api url to be called; PWGTP is required and always included in call
   URL_id <- paste0(URL_base, surv_year, "/acs/acs1/pums?get=PWGTP,", num_var_string, ",", cat_var_string)
   
   if (!is.null(condition)) {
@@ -150,11 +163,10 @@ api_query <- function(surv_year = "2022", num_var = "AGEP", cat_var = "SEX", geo
     URL_id <- paste0(URL_id, "&", condition_string)
   }
   
+  #display api url called for confirmtion
   print(URL_id)
   
-  
   #call API and create database
-  
   census_info <- GET(URL_id)
   
   census_df <- fromJSON(rawToChar(census_info$content))
@@ -175,10 +187,18 @@ api_query <- function(surv_year = "2022", num_var = "AGEP", cat_var = "SEX", geo
     }
   }
   
-  # function for creating data should assign a class of census
+  #' Function for creating data assigns a class of census to resulting tibble
+  #' @noRd
   
   class(census_tib) <- c("census", class(census_tib))
   
+  #' Ensure resulting tibble (census_tib) and selected variables are returned to the global environment for use in other functions and analysis
+  #' Superassigmment operator (<<-) is intentional to ensure local variables are passed to the global environment
+  #' A list including num_var, cat_var and census_tib is returned for redudancy and convenience so user assign function to an object and then specify the corresponding version of the variable created
+  #' @noRd
+  
+  num_var <<- num_var
+  cat_var <<- cat_var
   census_tib <<- census_tib
   
   return(list(
@@ -187,7 +207,6 @@ api_query <- function(surv_year = "2022", num_var = "AGEP", cat_var = "SEX", geo
     census_tib = census_tib
   ))
 }
-
 
 
 #make it so that you can't print two of the same column name
