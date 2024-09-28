@@ -192,6 +192,26 @@ api_query <- function(surv_year = "2022", num_var = "AGEP", cat_var = "SEX", geo
     }
   }
   
+  if(str_detect(URL_id,"JWAP")) {
+    census_tib <- census_tib |>
+      left_join(
+        jwap_time_table,
+        by = c("JWAP" = "code")
+        ) |>
+      select(-JWAP) |>
+      rename(JWAP = median_time)
+    }
+  
+    if(str_detect(URL_id,"JWDP")) {
+    census_tib <- census_tib |>
+      left_join(
+        jwap_time_table,
+        by = c("JWDP" = "code")
+        ) |>
+      select(-JWDP) |>
+      rename(JWDP = median_time)
+    }
+  
   #' Function for creating data assigns a class of census to resulting tibble
   #' @noRd
   
@@ -234,7 +254,7 @@ default_query
 ```
 
 ```{r}
-api_query(2016, num_var = c("GASP", "GRPIP"), "FER")
+api_query(2016, num_var = c("GASP", "GRPIP", "JWAP"), "FER")
 ```
 
 ```{r}
@@ -252,6 +272,7 @@ default_masters_nc
 ```
 
 Final run to reflect assigned `state`: 11 / DC
+
 ```{r}
 default_dc <- api_query(
     geo_level = "State",
@@ -259,7 +280,6 @@ default_dc <- api_query(
 )
 default_dc
 ```
-
 
 ## Writing a Generic Function for Summarizing
 
