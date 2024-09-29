@@ -26,11 +26,11 @@ library(roxygen2)
 
 some placeholder text
 
-### Prepare Time Variables
+Creating median time table for JWAP and JWDP
 
-Create median time table for JWAP and JWDP
+\*Note to Robbie: We'll have to call these from the functions and write a join\*
 
-First, create JWAP table
+JWAP
 
 ```{r}
 URL_jwap <- "https://api.census.gov/data/2022/acs/acs1/pums/variables/JWAP.json"
@@ -70,7 +70,7 @@ jwap_time_table$code <- as.numeric(jwap_time_table$code)
 jwap_time_table
 ```
 
-Second, create JWDP table
+JWDP
 
 ```{r}
 URL_jwdp <- "https://api.census.gov/data/2022/acs/acs1/pums/variables/JWDP.json"
@@ -110,9 +110,7 @@ jwdp_time_table$code <- as.numeric(jwdp_time_table$code)
 jwdp_time_table
 ```
 
-### Create the API
-
-Creating the API function
+Creating the API Function
 
 ```{r}
 #' setup global variables to be returned
@@ -251,32 +249,55 @@ api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var 
 
 ```
 
-### Create Multi-API
-
 ```{r}
-
 multi_api <- function(surv_years, ...) {
   multi_tibs <- lapply(surv_years, function(surv_year) {
     api_query(surv_year = surv_year, ...)
-    }
-  )
+  })
 }
-
 ```
 
 ### Test the API Function
 
-Run various combinations of inputs (including default) to test function
+```{r}
+default_query <- api_query()
+default_query
+```
 
 ```{r}
 api_query(2016, num_var = c("GASP", "GRPIP", "JWAP"), "FER")
 ```
 
-Final run to reflect assigned `state`: 11 / DC
+```{r}
+default_nc <- api_query(geo_level = "State", geo_code = "37")
+default_nc
+```
 
 ```{r}
-default_api <- api_query()
-default_api
+default_masters_nc <- api_query(
+  geo_level = "State",
+  geo_code = "37",
+  condition = "SCHL=22"
+  )
+default_masters_nc
+```
+
+Final run to reflect assigned \`state\`: 11 / DC
+
+```{r}
+default_dc <- api_query(
+    geo_level = "State",
+    geo_code = "11"
+)
+default_dc
+```
+
+## Obtaining Person Level Records
+
+The \`PWGTP\` variable actually represents the number of (people) observations there should be for a particular row.
+
+```{r}
+
 ```
 
 ## Writing a Generic Function for Summarizing
@@ -285,7 +306,7 @@ some placeholder text
 
 ### Numeric Summary
 
-Write a function that produces means and standard deviations for our numeric variable(s) and counts for our categorical variable(s).
+write a function that produces means and standard deviations for our numeric variable(s) and counts for our categorical variable(s).
 
 ```{r}
 census_summary <- function(tib = census_tib, cat_var, num_var) {
@@ -294,22 +315,22 @@ census_summary <- function(tib = census_tib, cat_var, num_var) {
   
   counts <- tib |>
     group_by(tib[[cat_var]]) |>
-    summarise(count = n())
+    summarise(n = n())
 
   return(list(sample_mean = sample_mean, sample_sd = sample_sd, counts = counts))
 }
 ```
 
-Test out this function by running `census_summary` on something you’ve returned from your census API function.
+Test out this function by running summary(*your_census_tibble*) on something you've returned from your census API function.
 
 ```{r}
-cen_sum <- census_summary(cat_var = "SEX", num_var = "AGEP")
+cen_sum <- census_summary(cat_var = "SEX", num_var = "PWGTP")
 print(cen_sum)
 ```
 
 ### Graphical Summary
 
-Similarly, let’s create a generic `plot()` function for a census class tibble. Require the user to specify one categorical variable and one numeric variable for plotting purposes.
+Similarly, let's create a generic plot() function for a census class tibble. Require the user to specify one categorical variable and one numeric variable for plotting purposes.
 
 ```{r}
 
@@ -320,11 +341,8 @@ census_plot <- function() {
 }
 ```
 
-Test `census_plot` function
+Test \`census_plot\` function
 
 ```{r}
-#| eval: false
-#| echo: false
-
 census_plot()
 ```
