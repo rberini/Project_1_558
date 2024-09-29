@@ -7,7 +7,7 @@ editor: visual
 
 ## Project Overview
 
-Our goal is to write functions that will manipulate and process data sets that come from a census API. Query the Public Use Microdata Sample (PUMS) Census API. Create a function that allows the user to call the API with different combinations of variables. Provide numerical and graphical summaries. We’ll create generic functions to automatically summarize and plot certain returned data. Lastly, we’ll write up a document via quarto to describe our thought process and give examples of using the functions.
+Our goal is to write functions that will manipulate and process data sets that come from a census API. Query the Public Use Microdata Sample (PUMS) Census API. Create a function that allows the user to call the API with different combinations of variables. Provide numerical and graphical summaries. We'll create generic functions to automatically summarize and plot certain returned data. Lastly, we'll write up a document via quarto to describe our thought process and give examples of using the functions.
 
 ## Required Packages
 
@@ -127,46 +127,59 @@ cat_var <- ""
 #' Numeric variable PWGTP is required for function and always called so is not included as a default that can be overwritten
 #' @noRd
 
-api_query <- function(surv_year = "2022", num_var = "AGEP", cat_var = "SEX", geo_level = "All", geo_code = "*", condition = NULL) {
-
-  #numeric variable PWGTP is required for function and always called
+api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var = "SEX", geo_level = "All", geo_code = "*", condition = NULL, geo_subset = "state:11") {
+  
+  #set acceptable values for validation
   valid_num_var <- c("AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP")
-  valid_date_var <- c("JWAP", "JWDP")
+  valid_date_var <- c("JWAP", "JWDP") #redundant check for time variables
   valid_cat_var <- c("FER", "HHL", "HISPEED", "JWTRNS", "SCH", "SCHL", "SEX")
   valid_geo_level <- c("All", "Region", "Division", "State")
   
   #ensure user selection is within permissible values
+  
   if (surv_year < 2010 || surv_year > 2022) {
     stop("Year must be between 2010 and 2022.")
-   }
+    }
   if (any(!num_var %in% valid_num_var)) {
     stop("Invalid Numeric Variable")
     }
   if (any(!cat_var %in% valid_cat_var)) {
     stop("Invalid Categorical Variable")
-  }
+    }
   if (any(!geo_level %in% valid_geo_level)) {
     stop("Invalid Geography Level")
     }
   
-  #create url string
-  num_var_string <- paste(num_var, collapse = ",")
-  print(num_var_string) #display num_var selection while executing
-  cat_var_string <- paste(cat_var, collapse = ",")
-  print(cat_var_string) #display cat_var selection while executing
+  #output usable strings for the numerical, categorical, and geo level variables
+  
+  num_var_string <- paste(unique(num_var), collapse = ",")
+  cat_var_string <- paste(unique(cat_var), collapse = ",")
+  
+  if(!geo_level == "ALL") {
+    geo_level_string <- paste(unique(geo_level), collapse = ",")
+    } 
+  else {
+    geo_level_string = NULL
+    }
+  
   URL_base <- "https://api.census.gov/data/"
-  #construct api url to be called; PWGTP is required and always included in call
-  URL_id <- paste0(URL_base, surv_year, "/acs/acs1/pums?get=PWGTP,", num_var_string, ",", cat_var_string)
+  URL_id <- paste0(URL_base, surv_year, "/acs/acs1/pums?get=PWGTP,", num_var_string, ",", cat_var_string, ",", geo_level_string)
   
-  if(geo_level != "All") {
-    geo_level <- tolower(geo_level)
-    URL_id <- paste0(URL_id, "&for=", geo_level, ":", geo_code)
-  }
   
-  if (!is.null(condition)) {
+  if(!is.null(condition)) {
     condition_string <- paste(condition, collapse = "&")
     URL_id <- paste0(URL_id, "&", condition_string)
-  }
+    }
+  
+  if(!is.null(geo_subset)) {
+    region_string <- paste(geo_subset, collapse = "&")
+    URL_id <- paste0(URL_id, "&for=", region_string)
+    }
+  
+  parsed_url <- parse_url(URL_id)
+  parsed_url$query$get <- paste(unique(unlist(strsplit(parsed_url$query$get, ",")))[!unique(unlist(strsplit(parsed_url$query$get, ","))) %in% names(parsed_url$query)], collapse = ",")
+  
+  URL_id <- gsub("%2C", ",", build_url(parsed_url))
   
   #display api url called for confirmtion
   print(URL_id)
@@ -180,17 +193,15 @@ api_query <- function(surv_year = "2022", num_var = "AGEP", cat_var = "SEX", geo
     as_tibble() |>
     row_to_names(row_number = 1)
   
-  census_tib$PWGTP <- as.numeric(census_tib$PWGTP)
-  
   for (column in colnames(census_tib)) {
     if (column %in% valid_date_var) {
       census_tib[[column]] <- as.numeric(census_tib[[column]])
-    } else if (column %in% valid_num_var) {
-      census_tib[[column]] <- as.numeric(census_tib[[column]])
-    } else if (column %in% valid_cat_var) {
-      census_tib[[column]] <- as.factor(census_tib[[column]])
+      } else if (column %in% valid_num_var) {
+        census_tib[[column]] <- as.numeric(census_tib[[column]])
+        } else if (column %in% valid_cat_var) {
+          census_tib[[column]] <- as.factor(census_tib[[column]])
+        }
     }
-  }
   
   if(str_detect(URL_id,"JWAP")) {
     census_tib <- census_tib |>
@@ -214,7 +225,7 @@ api_query <- function(surv_year = "2022", num_var = "AGEP", cat_var = "SEX", geo
   
   #' Function for creating data assigns a class of census to resulting tibble
   #' @noRd
-  
+  #' 
   class(census_tib) <- c("census", class(census_tib))
   
   #' Ensure resulting tibble (census_tib) and selected variables are returned to the global environment for use in other functions and analysis
@@ -239,19 +250,23 @@ api_query <- function(surv_year = "2022", num_var = "AGEP", cat_var = "SEX", geo
 #create a for loop to specify multiple data items
 ```
 
-### Obtaining Person Level Records
+### Create Multi-API
 
-The `PWGTP` variable actually represents the number of (people) observations there should be for a particular row.
+```{r}
+
+multi_api <- function(surv_years, ...) {
+  multi_tibs <- lapply(surv_years, function(surv_year) {
+    api_query(surv_year = surv_year, ...)
+    }
+  )
+}
+
+```
+
 
 ### Test the API Function
 
 Run various combinations of inputs (including default) to test function
-
-```{r}
-default_query <- api_query()
-default_query
-
-```
 
 ```{r}
 api_query(2016, num_var = c("GASP", "GRPIP", "JWAP"), "FER")
@@ -274,11 +289,8 @@ default_masters_nc
 Final run to reflect assigned `state`: 11 / DC
 
 ```{r}
-default_dc <- api_query(
-    geo_level = "State",
-    geo_code = "11"
-)
-default_dc
+default_api <- api_query()
+default_api
 ```
 
 ## Writing a Generic Function for Summarizing
@@ -287,7 +299,7 @@ some placeholder text
 
 ### Numeric Summary
 
-write a function that produces means and standard deviations for our numeric variable(s) and counts for our categorical variable(s).
+Write a function that produces means and standard deviations for our numeric variable(s) and counts for our categorical variable(s).
 
 ```{r}
 census_summary <- function(tib = census_tib, cat_var, num_var) {
@@ -296,13 +308,14 @@ census_summary <- function(tib = census_tib, cat_var, num_var) {
   
   counts <- tib |>
     group_by(tib[[cat_var]]) |>
-    summarise(n = n())
+    drop_na(tib[[cat_var]]) |>
+    summarise(count = n())
 
   return(list(sample_mean = sample_mean, sample_sd = sample_sd, counts = counts))
 }
 ```
 
-Test out this function by running summary (*your_census_tibble*) on something you’ve returned from your census API function.
+Test out this function by running `census_summary` on something you’ve returned from your census API function.
 
 ```{r}
 cen_sum <- census_summary(cat_var = "SEX", num_var = "AGEP")
