@@ -202,7 +202,7 @@ api_query <- function(surv_year = "2022", num_var = "AGEP", cat_var = "SEX", geo
       rename(JWAP = median_time)
     }
   
-    if(str_detect(URL_id,"JWDP")) {
+  if(str_detect(URL_id,"JWDP")) {
     census_tib <- census_tib |>
       left_join(
         jwap_time_table,
