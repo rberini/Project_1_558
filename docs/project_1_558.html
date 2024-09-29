@@ -159,11 +159,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="data-processing" class="level2">
 <h2 class="anchored" data-anchor-id="data-processing">Data Processing</h2>
 <p>some placeholder text</p>
-<section id="build-api" class="level3">
-<h3 class="anchored" data-anchor-id="build-api">Build API</h3>
-<p>Creating median time table for JWAP and JWDP</p>
-<p><em>Note to Robbie: We’ll have to call these from the functions and write a join</em></p>
-<p>JWAP</p>
+<section id="prepare-time-variables" class="level3">
+<h3 class="anchored" data-anchor-id="prepare-time-variables">Prepare Time Variables</h3>
+<p>Create median time table for JWAP and JWDP</p>
+<p>First, create JWAP table</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>URL_jwap <span class="ot">&lt;-</span> <span class="st">"https://api.census.gov/data/2022/acs/acs1/pums/variables/JWAP.json"</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>jwap_time_table <span class="ot">&lt;-</span> <span class="fu">GET</span>(URL_jwap)</span>
@@ -217,7 +216,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 # ℹ 276 more rows</code></pre>
 </div>
 </div>
-<p>JWDP</p>
+<p>Second, create JWDP table</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>URL_jwdp <span class="ot">&lt;-</span> <span class="st">"https://api.census.gov/data/2022/acs/acs1/pums/variables/JWDP.json"</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>jwdp_time_table <span class="ot">&lt;-</span> <span class="fu">GET</span>(URL_jwdp)</span>
@@ -271,6 +270,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 # ℹ 141 more rows</code></pre>
 </div>
 </div>
+</section>
+<section id="create-the-api" class="level3">
+<h3 class="anchored" data-anchor-id="create-the-api">Create the API</h3>
 <p>Creating the API function</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">#' setup global variables to be returned</span></span>
@@ -359,7 +361,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb6-84"><a href="#cb6-84" aria-hidden="true" tabindex="-1"></a>      <span class="fu">rename</span>(<span class="at">JWAP =</span> median_time)</span>
 <span id="cb6-85"><a href="#cb6-85" aria-hidden="true" tabindex="-1"></a>    }</span>
 <span id="cb6-86"><a href="#cb6-86" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb6-87"><a href="#cb6-87" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span>(<span class="fu">str_detect</span>(URL_id,<span class="st">"JWDP"</span>)) {</span>
+<span id="cb6-87"><a href="#cb6-87" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">str_detect</span>(URL_id,<span class="st">"JWDP"</span>)) {</span>
 <span id="cb6-88"><a href="#cb6-88" aria-hidden="true" tabindex="-1"></a>    census_tib <span class="ot">&lt;-</span> census_tib <span class="sc">|&gt;</span></span>
 <span id="cb6-89"><a href="#cb6-89" aria-hidden="true" tabindex="-1"></a>      <span class="fu">left_join</span>(</span>
 <span id="cb6-90"><a href="#cb6-90" aria-hidden="true" tabindex="-1"></a>        jwap_time_table,</span>
@@ -455,7 +457,7 @@ $cat_var
 [1] "FER"
 
 $census_tib
-# A tibble: 3,156,487 × 5
+# A tibble: 2,103,075 × 5
    PWGTP  GASP GRPIP FER   JWAP  
    &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;fct&gt; &lt;time&gt;
  1    57   200     0 1        NA 
@@ -468,7 +470,7 @@ $census_tib
  8    96     2     0 0        NA 
  9   108     2     0 0        NA 
 10    91     4     0 0        NA 
-# ℹ 3,156,477 more rows</code></pre>
+# ℹ 2,103,065 more rows</code></pre>
 </div>
 </div>
 <div class="cell">
@@ -628,9 +630,6 @@ $counts
 <p>Test <code>census_plot</code> function</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">census_plot</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in rq.fit.br(wx, wy, tau = tau, ...): Solution may be nonunique</code></pre>
-</div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">

@@ -26,13 +26,11 @@ library(roxygen2)
 
 some placeholder text
 
-### Build API
+### Prepare Time Variables
 
-Creating median time table for JWAP and JWDP
+Create median time table for JWAP and JWDP
 
-*Note to Robbie: We'll have to call these from the functions and write a join*
-
-JWAP
+First, create JWAP table
 
 ```{r}
 URL_jwap <- "https://api.census.gov/data/2022/acs/acs1/pums/variables/JWAP.json"
@@ -72,7 +70,7 @@ jwap_time_table$code <- as.numeric(jwap_time_table$code)
 jwap_time_table
 ```
 
-JWDP
+Second, create JWDP table
 
 ```{r}
 URL_jwdp <- "https://api.census.gov/data/2022/acs/acs1/pums/variables/JWDP.json"
@@ -111,6 +109,8 @@ jwdp_time_table$code <- as.numeric(jwdp_time_table$code)
 
 jwdp_time_table
 ```
+
+### Create the API
 
 Creating the API function
 
