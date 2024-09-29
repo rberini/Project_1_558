@@ -122,6 +122,11 @@ census_tib <- as_tibble(data.frame())
 num_var <- ""
 cat_var <- ""
 
+valid_num_var <- c("AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP", "PWGTP")
+valid_date_var <- c("JWAP", "JWDP")
+valid_cat_var <- c("FER", "HHL", "HISPEED", "JWTRNS", "SCH", "SCHL", "SEX")
+valid_geo_level <- c("ALL", "REGION", "DIVISION", "STATE")
+
 #' Begin query building
 #' Numeric variable PWGTP is required for function and always called so is not included as a default that can be overwritten
 #' @noRd
@@ -129,11 +134,7 @@ cat_var <- ""
 
 api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var = "SEX", geo_level = "ALL", condition = NULL, geo_subset = "STATE:11") {
   
-  valid_num_var <- c("AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP", "PWGTP")
-  valid_date_var <- c("JWAP", "JWDP")
-  valid_cat_var <- c("FER", "HHL", "HISPEED", "JWTRNS", "SCH", "SCHL", "SEX")
-  valid_geo_level <- c("ALL", "REGION", "DIVISION", "STATE")
-  
+
   #ensure user selection is within permissible values
   
   if (surv_year < 2010 || surv_year > 2022) {
@@ -273,14 +274,30 @@ some placeholder text
 write a function that produces means and standard deviations for our numeric variable(s) and counts for our categorical variable(s).
 
 ```{r}
-census_summary <- function(tib = census_tib, cat_var, num_var) {
-  sample_mean <- sum(tib[[num_var]] * tib$PWGTP)/sum(tib$PWGTP)
-  sample_sd <- sqrt(sum((tib[[num_var]]^2)*tib$PWGTP)/sum(tib$PWGTP)-sample_mean^2)
+census_summary <- function(tib = census_tib, cat_var_s, num_var_s) {
   
-  counts <- tib |>
-    group_by(tib[[cat_var]]) |>
-    summarise(n = n())
-
+  for(name in num_var_s) {
+    if(name %in% colnames(tib) &
+       name %in% valid_num_var &
+       name != "PWGTP") {
+      sample_mean <- sum(tib[[name]] * tib$PWGTP)/sum(tib$PWGTP)
+      sample_sd <- sqrt(sum((tib[[name]]^2)*tib$PWGTP)/sum(tib$PWGTP)-sample_mean^2)
+    } else {
+        stop("Please enter numeric variables used in API call")
+      }
+  }
+  
+  for(name in cat_var_s) {
+    if(name %in% colnames(tib) &
+       name %in% valid_cat_var) {
+      counts <- tib |>
+        group_by(tib[[name]]) |>
+        summarise(count = n())
+    } else {
+        stop("Please enter categorical variables used in API call")
+      }
+  } 
+  
   return(list(sample_mean = sample_mean, sample_sd = sample_sd, counts = counts))
 }
 ```
@@ -288,7 +305,7 @@ census_summary <- function(tib = census_tib, cat_var, num_var) {
 Test out this function by running summary(*your_census_tibble*) on something you've returned from your census API function.
 
 ```{r}
-cen_sum <- census_summary(cat_var = "SEX", num_var = "PWGTP")
+cen_sum <- census_summary(cat_var_s = "SEX", num_var_s = "AGEP")
 print(cen_sum)
 ```
 
@@ -297,20 +314,38 @@ print(cen_sum)
 Similarly, let's create a generic plot() function for a census class tibble. Require the user to specify one categorical variable and one numeric variable for plotting purposes.
 
 ```{r}
-census_plot <- function() {
-  ggplot(census_tib,
-       aes(x = .data[[cat_var]], y = .data[[num_var]], weight = PWGTP)) +
-    geom_boxplot()
+census_plot <- function(tib = census_tib, cat_var_s, num_var_s) {
+  
+  for(name in num_var_s) {
+    if(name %in% colnames(tib) &
+       name %in% valid_num_var &
+       name != "PWGTP") {
+      y <- tib[[name]]
+    } else {
+        stop("Please enter numeric variables used in API call")
+      }
+  }
+  
+  for(name in cat_var_s) {
+    if(name %in% colnames(tib) &
+       name %in% valid_cat_var) {
+      x <- tib[[name]]
+    } else {
+        stop("Please enter categorical variables used in API call")
+      }
+  } 
+  
+  ggplot(tib,
+       aes(x = x, y = y, weight = PWGTP)) +
+    geom_boxplot() +
+    xlab(cat_var_s) +
+    ylab(num_var_s)
 }
 ```
 
 Test \`census_plot\` function
 
 ```{r}
-#| eval: false
-#| echo: false
 
-#removing from render job while fixing issues
-
-census_plot()
+census_plot(cat_var_s = "SEX", num_var_s = "AGEP")
 ```
