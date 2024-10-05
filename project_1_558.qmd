@@ -131,14 +131,13 @@ valid_geo_level <- c("ALL", "REGION", "DIVISION", "STATE")
 #' Numeric variable PWGTP is required for function and always called so is not included as a default that can be overwritten
 #' @noRd
 
-
 api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var = "SEX", geo_level = "ALL", condition = NULL, geo_subset = "STATE:11") {
   
 
   #ensure user selection is within permissible values
   
-  if (surv_year < 2010 || surv_year > 2022) {
-    stop("Year must be between 2010 and 2022.")
+  if (surv_year < 2010 || surv_year > 2022 || surv_year == 2020) {
+    stop("Year must be between 2010 and 2022, excluding 2020.")
     }
   if (any(!num_var %in% valid_num_var)) {
     stop("Invalid Numeric Variable")
@@ -156,6 +155,8 @@ api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var 
   num_var_string <- paste(unique(num_var), collapse = ",")
   cat_var_string <- paste(unique(cat_var), collapse = ",")
   
+  #if geo level is all, then don't do anything, else then start it as null to be replaced
+  
   if (!geo_level == "ALL") {
     geo_level_string <- paste(unique(geo_level), collapse = ",")
     }
@@ -163,8 +164,11 @@ api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var 
     geo_level_string = NULL
     }
   
+  #start with the URl base, and then append the required numerical, categorical, and geo level with the designated survey years
   URL_base <- "https://api.census.gov/data/"
   URL_id <- paste0(URL_base, surv_year, "/acs/acs1/pums?get=PWGTP,", num_var_string, ",", cat_var_string, ",",geo_level_string)
+  
+  #make room for conditions, including subsetting by cat/num and also by region
   
   if (!is.null(condition)) {
     condition_string <- paste(condition, collapse = "&")
@@ -176,11 +180,20 @@ api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var 
     URL_id <- paste0(URL_id, "&for=", region_string)
     }
   
-  parsed_url <- parse_url(URL_id)
-  parsed_url$query$get <- paste(unique(unlist(strsplit(parsed_url$query$get, ",")))[!unique(unlist(strsplit(parsed_url$query$get, ","))) %in% names(parsed_url$query)], collapse = ",")
-  URL_id <- gsub("%2C", ",", build_url(parsed_url))
   
   print(URL_id)
+  parsed_url <- parse_url(URL_id)
+  
+  parsed_url$query$get <- parsed_url$query$get |>
+  strsplit(split = ",") |>
+  unlist() |>
+  unique() |>
+  setdiff(names(parsed_url$query)) |>
+  paste(collapse = ",")
+  
+  URL_id <- gsub("%2C", ",", build_url(parsed_url))
+  
+  #print(URL_id)
   
   census_info <- GET(URL_id)
   census_df <- fromJSON(rawToChar(census_info$content))
@@ -233,7 +246,6 @@ api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var 
   cat_var <<- cat_var
   census_tib <<- census_tib
   
-  print(census_tib)
   
     return(list(
     num_var = num_var,
@@ -248,6 +260,7 @@ api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var 
 multi_api <- function(surv_years, ...) {
   multi_tibs <- lapply(surv_years, function(surv_year) {
     api_query(surv_year = surv_year, ...)
+    print(census_tib)
     })
 }
 ```
@@ -256,6 +269,10 @@ multi_api <- function(surv_years, ...) {
 
 ```{r}
 api_query(2016, num_var = c("GASP", "GRPIP", "JWAP"), "FER")
+```
+
+```{r}
+multi_api(surv_years = c("2015", "2021"), num_var = c("JWDP","GRPIP","GRPIP"), cat_var = c("FER", "HHL"), condition="AGEP=30", geo_subset= "STATE:19")
 ```
 
 Final run to reflect assigned \`state\`: 11 / DC
@@ -274,31 +291,48 @@ some placeholder text
 write a function that produces means and standard deviations for our numeric variable(s) and counts for our categorical variable(s).
 
 ```{r}
-census_summary <- function(tib = census_tib, cat_var_s, num_var_s) {
+census_summary <- function(tib = census_tib, cat_var_s = c(intersect(colnames(census_tib), valid_cat_var)), num_var_s = c(setdiff(intersect(colnames(census_tib), valid_num_var), "PWGTP"))) {
+  
+  sample_means <- list()
+  sample_sds <- list()
+  all_counts <- list()
   
   for(name in num_var_s) {
     if(name %in% colnames(tib) &
        name %in% valid_num_var &
-       name != "PWGTP") {
+       !name %in% c("PWGTP", "JWDP", "JWAP")) {
       sample_mean <- sum(tib[[name]] * tib$PWGTP)/sum(tib$PWGTP)
       sample_sd <- sqrt(sum((tib[[name]]^2)*tib$PWGTP)/sum(tib$PWGTP)-sample_mean^2)
-    } else {
-        stop("Please enter numeric variables used in API call")
+      sample_means[[name]] <- sample_mean
+      sample_sds[[name]] <- sample_sd
+    }
+    else if(name %in% c("JWAP", "JWDP")) {
+      tib <- na.omit(tib)
+      sample_mean <- (sum(as.numeric(tib[[name]]) * tib$PWGTP)/sum(tib$PWGTP))
+      sample_sd <- (sqrt(sum((as.numeric(tib[[name]])^2)*tib$PWGTP)/sum(tib$PWGTP)-sample_mean^2))
+      sample_mean <- hms::round_hms(hms::as_hms(sample_mean), secs = 1)
+      sample_sd <- hms::round_hms(hms::as_hms(sample_sd), secs = 1)
+      sample_means[[name]] <- sample_mean
+      sample_sds[[name]] <- sample_sd
       }
+    else {
+        stop("Please enter numeric variables used in API call except PWGTP")
+    }
   }
   
   for(name in cat_var_s) {
-    if(name %in% colnames(tib) &
-       name %in% valid_cat_var) {
+    if(name %in% colnames(tib) & name %in% valid_cat_var) {
       counts <- tib |>
         group_by(tib[[name]]) |>
-        summarise(count = n())
+        summarise(count = n()) |>
+        rename_with(~ name, 1)
+      all_counts[[name]] <- counts
     } else {
         stop("Please enter categorical variables used in API call")
       }
-  } 
-  
-  return(list(sample_mean = sample_mean, sample_sd = sample_sd, counts = counts))
+  }
+  #return as a named list
+  return(list(sample_means = sample_means, sample_sds = sample_sds, all_counts = all_counts))
 }
 ```
 
@@ -307,6 +341,9 @@ Test out this function by running summary(*your_census_tibble*) on something you
 ```{r}
 cen_sum <- census_summary(cat_var_s = "SEX", num_var_s = "AGEP")
 print(cen_sum)
+
+default_cen_sum <- census_summary()
+print(default_cen_sum)
 ```
 
 ### Graphical Summary
@@ -347,5 +384,5 @@ Test \`census_plot\` function
 
 ```{r}
 
-census_plot(cat_var_s = "SEX", num_var_s = "AGEP")
+census_plot(cat_var_s = "HHL", num_var_s = "AGEP")
 ```
