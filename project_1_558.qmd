@@ -339,8 +339,7 @@ api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var 
                                           "Bachelor's degree",
                                           "Master's degree",
                                           "Professional degree",
-                                          "Doctorate degree",
-                                          "Other")))
+                                          "Doctorate degree")))
     }
   
   
