@@ -7,7 +7,7 @@ editor: visual
 
 ## Project Overview
 
-Our goal is to write functions that will manipulate and process data sets that come from a census API. We will query the Public Use Microdata Sample (PUMS) Census API, creating a function that allows the user to call the API with different combinations of variables. We'll create generic functions to automatically summarize and plot certain returned data, providing numerical and graphical summaries. Lastly, we'll write up a document via quarto to describe our thought process and give examples of using the functions.
+Our goal is to write functions that will manipulate and process data sets that come from a census API. We will query the Public Use Microdata Sample (PUMS) Census API, creating a function that allows the user to call the API with different combinations of variables. We'll then create generic functions to automatically summarize and plot certain returned data, providing numerical and graphical summaries. Lastly, we'll write up this document via quarto to describe our thought process and give examples of using the functions.
 
 ## Required Packages
 
@@ -309,7 +309,7 @@ api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var 
 
 ### Multi-Year API
 
-This function takes the api_query function and allows the user, along with the previous defaults from that function, to select multiple years and return one large tibble that binds the multiple years by row.
+This function takes the `api_query` function and allows the user, along with the previous defaults from that function, to select multiple years and return one large tibble that binds the multiple years by row.
 
 ```{r}
 multi_api <- function(surv_years, ...) {
@@ -327,15 +327,19 @@ multi_api <- function(surv_years, ...) {
 
 ### Test the API Function
 
+Ensure the `api_query` function is working properly by feeding in some numeric, date, and categorical variables.
+
 ```{r}
 api_query(2016, num_var = c("GASP", "GRPIP", "JWAP"), "FER")
 ```
+
+Ensure the `multi_api` function is working properly by combining years and feeding in some numeric, date, and categorical variables.
 
 ```{r}
 multi_api(surv_years = c("2015", "2021"), num_var = c("JWDP","GRPIP","GRPIP"), cat_var = c("FER", "HHL"), condition="AGEP=30", geo_subset= "STATE:19")
 ```
 
-Final run to reflect assigned \`state\`: 11 (i.e., DC)
+Finally, test the empty function call (i.e., test the default query) to reflect assigned \`state\` of 11 (i.e., DC). This is the tibble to be used in creating summaries below.
 
 ```{r}
 default_query <- api_query()
@@ -344,11 +348,11 @@ default_query
 
 ## Writing a Generic Function for Summarizing
 
-some placeholder text
+For the variables returned from the API call (or some subset thereof), generate specific numeric and graphical summaries to describe the data.
 
 ### Numeric Summary
 
-write a function that produces means and standard deviations for our numeric variable(s) and counts for our categorical variable(s).
+Write a function that produces means and standard deviations for our numeric variable(s) and counts for our categorical variable(s).
 
 ```{r}
 census_summary <- function(tib = census_tib, cat_var_s = c(intersect(colnames(census_tib), valid_cat_var)), num_var_s = c(setdiff(intersect(colnames(census_tib), valid_num_var), "PWGTP"))) {
@@ -396,15 +400,20 @@ census_summary <- function(tib = census_tib, cat_var_s = c(intersect(colnames(ce
 }
 ```
 
-Test out this function by running `census_summary` on `SEX` and `AGEP` variables per default `api_query`.
+Test out this function by running `census_summary` on `SEX` and `AGEP` variables per the default `api_query`.
 
 ```{r}
 cen_sum <- census_summary(cat_var_s = "SEX", num_var_s = "AGEP")
 print(cen_sum)
+```
 
+Validate that the call above returns the same output as an empty function call.
+
+```{r}
 default_cen_sum <- census_summary()
 print(default_cen_sum)
 ```
+
 
 ### Graphical Summary
 
@@ -440,7 +449,7 @@ census_plot <- function(tib = census_tib, cat_var_s, num_var_s) {
 }
 ```
 
-Test \`census_plot\` function
+Test the \`census_plot\` function on `SEX` and `AGEP` variables per the default `api_query`.
 
 ```{r}
 census_plot(cat_var_s = "SEX", num_var_s = "AGEP")

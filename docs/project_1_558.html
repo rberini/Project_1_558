@@ -142,7 +142,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="project-overview" class="level2">
 <h2 class="anchored" data-anchor-id="project-overview">Project Overview</h2>
-<p>Our goal is to write functions that will manipulate and process data sets that come from a census API. We will query the Public Use Microdata Sample (PUMS) Census API, creating a function that allows the user to call the API with different combinations of variables. We’ll create generic functions to automatically summarize and plot certain returned data, providing numerical and graphical summaries. Lastly, we’ll write up a document via quarto to describe our thought process and give examples of using the functions.</p>
+<p>Our goal is to write functions that will manipulate and process data sets that come from a census API. We will query the Public Use Microdata Sample (PUMS) Census API, creating a function that allows the user to call the API with different combinations of variables. We’ll then create generic functions to automatically summarize and plot certain returned data, providing numerical and graphical summaries. Lastly, we’ll write up this document via quarto to describe our thought process and give examples of using the functions.</p>
 </section>
 <section id="required-packages" class="level2">
 <h2 class="anchored" data-anchor-id="required-packages">Required Packages</h2>
@@ -463,7 +463,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="multi-year-api" class="level3">
 <h3 class="anchored" data-anchor-id="multi-year-api">Multi-Year API</h3>
-<p>This function takes the api_query function and allows the user, along with the previous defaults from that function, to select multiple years and return one large tibble that binds the multiple years by row.</p>
+<p>This function takes the <code>api_query</code> function and allows the user, along with the previous defaults from that function, to select multiple years and return one large tibble that binds the multiple years by row.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>multi_api <span class="ot">&lt;-</span> <span class="cf">function</span>(surv_years, ...) {</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  multi_tibs <span class="ot">&lt;-</span> <span class="fu">lapply</span>(surv_years, <span class="cf">function</span>(surv_year) {</span>
@@ -480,6 +480,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="test-the-api-function" class="level3">
 <h3 class="anchored" data-anchor-id="test-the-api-function">Test the API Function</h3>
+<p>Ensure the <code>api_query</code> function is working properly by feeding in some numeric, date, and categorical variables.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">api_query</span>(<span class="dv">2016</span>, <span class="at">num_var =</span> <span class="fu">c</span>(<span class="st">"GASP"</span>, <span class="st">"GRPIP"</span>, <span class="st">"JWAP"</span>), <span class="st">"FER"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
@@ -514,6 +515,7 @@ $census_tib
 # ℹ 6,636 more rows</code></pre>
 </div>
 </div>
+<p>Ensure the <code>multi_api</code> function is working properly by combining years and feeding in some numeric, date, and categorical variables.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">multi_api</span>(<span class="at">surv_years =</span> <span class="fu">c</span>(<span class="st">"2015"</span>, <span class="st">"2021"</span>), <span class="at">num_var =</span> <span class="fu">c</span>(<span class="st">"JWDP"</span>,<span class="st">"GRPIP"</span>,<span class="st">"GRPIP"</span>), <span class="at">cat_var =</span> <span class="fu">c</span>(<span class="st">"FER"</span>, <span class="st">"HHL"</span>), <span class="at">condition=</span><span class="st">"AGEP=30"</span>, <span class="at">geo_subset=</span> <span class="st">"STATE:19"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
@@ -537,7 +539,7 @@ $census_tib
 # ℹ 713 more rows</code></pre>
 </div>
 </div>
-<p>Final run to reflect assigned `state`: 11 (i.e., DC)</p>
+<p>Finally, test the empty function call (i.e., test the default query) to reflect assigned `state` of 11 (i.e., DC). This is the tibble to be used in creating summaries below.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>default_query <span class="ot">&lt;-</span> <span class="fu">api_query</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
@@ -555,16 +557,16 @@ $census_tib
 # A tibble: 6,718 × 4
    PWGTP  AGEP SEX    state
    &lt;dbl&gt; &lt;dbl&gt; &lt;fct&gt;  &lt;chr&gt;
- 1    68    34 Female 11   
- 2    52    33 Female 11   
- 3    44    32 Male   11   
- 4    53     0 Female 11   
- 5    49    23 Female 11   
- 6    35    25 Male   11   
- 7    33    24 Female 11   
- 8    75    58 Male   11   
- 9    81    66 Female 11   
-10    48    94 Male   11   
+ 1    81    18 Female 11   
+ 2    67    18 Female 11   
+ 3    85    19 Male   11   
+ 4    51    18 Male   11   
+ 5    56    23 Female 11   
+ 6    80    20 Male   11   
+ 7   213    34 Female 11   
+ 8   175    66 Male   11   
+ 9    84    24 Male   11   
+10    62    19 Female 11   
 # ℹ 6,708 more rows</code></pre>
 </div>
 </div>
@@ -572,10 +574,10 @@ $census_tib
 </section>
 <section id="writing-a-generic-function-for-summarizing" class="level2">
 <h2 class="anchored" data-anchor-id="writing-a-generic-function-for-summarizing">Writing a Generic Function for Summarizing</h2>
-<p>some placeholder text</p>
+<p>For the variables returned from the API call (or some subset thereof), generate specific numeric and graphical summaries to describe the data.</p>
 <section id="numeric-summary" class="level3">
 <h3 class="anchored" data-anchor-id="numeric-summary">Numeric Summary</h3>
-<p>write a function that produces means and standard deviations for our numeric variable(s) and counts for our categorical variable(s).</p>
+<p>Write a function that produces means and standard deviations for our numeric variable(s) and counts for our categorical variable(s).</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>census_summary <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">tib =</span> census_tib, <span class="at">cat_var_s =</span> <span class="fu">c</span>(<span class="fu">intersect</span>(<span class="fu">colnames</span>(census_tib), valid_cat_var)), <span class="at">num_var_s =</span> <span class="fu">c</span>(<span class="fu">setdiff</span>(<span class="fu">intersect</span>(<span class="fu">colnames</span>(census_tib), valid_num_var), <span class="st">"PWGTP"</span>))) {</span>
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  </span>
@@ -621,7 +623,7 @@ $census_tib
 <span id="cb21-42"><a href="#cb21-42" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">list</span>(<span class="at">sample_means =</span> sample_means, <span class="at">sample_sds =</span> sample_sds, <span class="at">all_counts =</span> all_counts))</span>
 <span id="cb21-43"><a href="#cb21-43" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>Test out this function by running <code>census_summary</code> on <code>SEX</code> and <code>AGEP</code> variables per default <code>api_query</code>.</p>
+<p>Test out this function by running <code>census_summary</code> on <code>SEX</code> and <code>AGEP</code> variables per the default <code>api_query</code>.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>cen_sum <span class="ot">&lt;-</span> <span class="fu">census_summary</span>(<span class="at">cat_var_s =</span> <span class="st">"SEX"</span>, <span class="at">num_var_s =</span> <span class="st">"AGEP"</span>)</span>
 <span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(cen_sum)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -644,6 +646,9 @@ $all_counts$SEX
 1 Male    3135
 2 Female  3583</code></pre>
 </div>
+</div>
+<p>Validate that the call above returns the same output as an empty function call.</p>
+<div class="cell">
 <div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>default_cen_sum <span class="ot">&lt;-</span> <span class="fu">census_summary</span>()</span>
 <span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(default_cen_sum)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
@@ -699,13 +704,13 @@ $all_counts$SEX
 <span id="cb26-26"><a href="#cb26-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ylab</span>(num_var_s)</span>
 <span id="cb26-27"><a href="#cb26-27" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>Test `census_plot` function</p>
+<p>Test the `census_plot` function on <code>SEX</code> and <code>AGEP</code> variables per the default <code>api_query</code>.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">census_plot</span>(<span class="at">cat_var_s =</span> <span class="st">"SEX"</span>, <span class="at">num_var_s =</span> <span class="st">"AGEP"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="project_1_558_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="project_1_558_files/figure-html/unnamed-chunk-14-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
