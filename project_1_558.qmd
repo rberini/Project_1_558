@@ -472,6 +472,7 @@ multi_api(surv_years = c("2015", "2021"), num_var = c("JWDP","GRPIP","GRPIP"), c
 Finally, test the empty function call (i.e., test the default query) to reflect assigned \`state\` of 11 (i.e., DC). This is the tibble to be used in creating summaries below.
 
 ```{r}
+#this should be last call to api_query, which establishes defaults for summary functions
 default_query <- api_query()
 default_query
 ```
@@ -486,7 +487,13 @@ Write a function that produces means and standard deviations for our numeric var
 
 ```{r}
 census_summary <- function(tib = census_tib, cat_var_s = c(intersect(colnames(census_tib), valid_cat_var)), num_var_s = c(setdiff(intersect(colnames(census_tib), valid_num_var), "PWGTP"))) {
+
+#' function takes in variables used in api query call to find descriptive stratistics
+#' defaults to variables from most recent census_tib return
+#' @noRd
   
+    
+  #initialize lists
   sample_means <- list()
   sample_sds <- list()
   all_counts <- list()
@@ -550,7 +557,12 @@ Create a generic `plot()` function for a census class tibble. Require the user t
 
 ```{r}
 census_plot <- function(tib = census_tib, cat_var_s, num_var_s) {
+
+#' function generates a boxplot based upon one numeric and one categorical variable from api_query call
+#' defaults most recent tibble returned from api_query
+#' @noRd
   
+    
   for(name in num_var_s) {
     if(name %in% colnames(tib) &
        name %in% valid_num_var &
@@ -569,7 +581,8 @@ census_plot <- function(tib = census_tib, cat_var_s, num_var_s) {
         stop("Please enter categorical variables used in API call")
       }
   } 
-  
+
+  #boxplot calls x and y variables from for loops above  
   ggplot(tib,
        aes(x = x, y = y, weight = PWGTP)) +
     geom_boxplot() +
@@ -585,3 +598,7 @@ Test the \`census_plot\` function on `SEX` and `AGEP` variables per the default 
 
 census_plot(cat_var_s = "SEX", num_var_s = "AGEP")
 ```
+
+## Project Conclusion
+
+Our goal was to write functions that would manipulate and process data sets that came from a census API. We queried the Public Use Microdata Sample (PUMS) Census API, creating a function that allowed the user to call the API with different combinations of variables. We then created generic functions to automatically summarize and plot certain returned data, providing numerical and graphical summaries. Lastly, we wrote up this document via quarto to describe our thought process and give examples of using the functions, and published an HTML report.
