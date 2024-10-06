@@ -11,7 +11,7 @@ Our goal is to write functions that will manipulate and process data sets that c
 
 ## Required Packages
 
-Load required packages for project
+Load required packages for project.
 
 ```{r setup, message=FALSE, warning=FALSE}
 library(tidyverse)
@@ -24,13 +24,13 @@ library(roxygen2)
 
 ## Data Processing
 
-some placeholder text
+Before creating a function with the API, we first had to validate the integrity of variables. Considering that we have both numerical and categorical variables, we decided to look through each and account for the factors and numerical ranges as appropriate. After validating the variables, we created the API. The API is created so that it prints out the requested categorical, numerical, and time variables with conditions and geographical subset. The user has free rein to choose one or multiple of each type of variable, and if a user would like to select multiple years of data, the multi_api function allows them to do so.
 
 ### Prepare Time Variables
 
-Create median time table for JWAP and JWDP
+The time variables need to be handled slightly differently than the other numeric variables. Since there are NA's, and also since we are working with a range of values, we have decided to find the median (or exact middle) of each time to use for JWAP and JWDP. In particular, JWAP is the time of arrival at work by hour and minute, and JWDP is the time of departure for work by hour and minute. Before we run the API function, we first decided to create a median time table for JWAP and JWDP.
 
-First, create JWAP table
+#### First, create JWAP table
 
 ```{r}
 URL_jwap <- "https://api.census.gov/data/2022/acs/acs1/pums/variables/JWAP.json"
@@ -70,7 +70,7 @@ jwap_time_table$code <- as.numeric(jwap_time_table$code)
 jwap_time_table
 ```
 
-Second, create JWDP table
+#### Second, create JWDP table
 
 ```{r}
 URL_jwdp <- "https://api.census.gov/data/2022/acs/acs1/pums/variables/JWDP.json"
@@ -110,18 +110,22 @@ jwdp_time_table$code <- as.numeric(jwdp_time_table$code)
 jwdp_time_table
 ```
 
+Now that this is complete, we can finish Data processing by creating the API.
+
 ### Create the API
 
-Creating the API function
+The API starts by creating blank variables so that a clean slate is ran each time. Then, valid variables of each possible user selection (numerical, categorical, date, and geographical level) are listed
 
 ```{r}
 #' setup global variables to be returned
 #' @noRd
 
+#blank variables for clean slate
 census_tib <- as_tibble(data.frame())
 num_var <- ""
 cat_var <- ""
 
+#all possible variable values
 valid_num_var <- c("AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP", "PWGTP")
 valid_date_var <- c("JWAP", "JWDP")
 valid_cat_var <- c("FER", "HHL", "HISPEED", "JWTRNS", "SCH", "SCHL", "SEX")
@@ -151,7 +155,7 @@ api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var 
     }
   
   
-  #output usable strings for the numerical, categorical, and geo level variables
+  #output unique usable strings for the numerical, categorical, and geo level variables
   num_var_string <- paste(unique(num_var), collapse = ",")
   cat_var_string <- paste(unique(cat_var), collapse = ",")
   
@@ -180,10 +184,11 @@ api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var 
     URL_id <- paste0(URL_id, "&for=", region_string)
     }
   
-  
+  #allow user to see their finalized url, then parse it for parameters
   print(URL_id)
   parsed_url <- parse_url(URL_id)
   
+  #pipe to fix spacing and commas, otherwise error
   parsed_url$query$get <- parsed_url$query$get |>
   strsplit(split = ",") |>
   unlist() |>
@@ -191,17 +196,21 @@ api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var 
   setdiff(names(parsed_url$query)) |>
   paste(collapse = ",")
   
+  #clean up url
   URL_id <- gsub("%2C", ",", build_url(parsed_url))
   
   #print(URL_id)
   
+  #query the api now
   census_info <- GET(URL_id)
   census_df <- fromJSON(rawToChar(census_info$content))
   
+  #create a tibble 
   census_tib <- census_df |>
     as_tibble() |>
     row_to_names(row_number = 1)
   
+  #append columns to the tibble based on the selected variables from before
   for (column in colnames(census_tib)) {
     if (column %in% valid_date_var) {
       census_tib[[column]] <- as.numeric(census_tib[[column]])
@@ -212,6 +221,7 @@ api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var 
         }
     }
   
+  #create statements for the time variables that formats them based on the definitions from up above if they are present.
   if(str_detect(URL_id,"JWAP")) {
     census_tib <- census_tib |>
       left_join(
@@ -256,12 +266,21 @@ api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var 
 }
 ```
 
+### Multi-Year API
+
+This function takes the api_query function and allows the user, along with the previous defaults from that function, to select multiple years and return one large tibble that binds the multiple years by row.
+
 ```{r}
 multi_api <- function(surv_years, ...) {
   multi_tibs <- lapply(surv_years, function(surv_year) {
-    api_query(surv_year = surv_year, ...)
-    print(census_tib)
+    tib_call <- api_query(surv_year = surv_year, ...)
+    final_tib <- tib_call$census_tib
+    final_tib <- final_tib  |> 
+      mutate(surv_year = surv_year)
+    return(final_tib)
     })
+  entire_tib <- bind_rows(multi_tibs)
+  return(entire_tib)
 }
 ```
 
@@ -384,5 +403,5 @@ Test \`census_plot\` function
 
 ```{r}
 
-census_plot(cat_var_s = "HHL", num_var_s = "AGEP")
+census_plot(cat_var_s = "SEX", num_var_s = "AGEP")
 ```
