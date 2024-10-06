@@ -110,6 +110,98 @@ jwdp_time_table$code <- as.numeric(jwdp_time_table$code)
 jwdp_time_table
 ```
 
+```{r}
+
+URL_SCHL <- "https://api.census.gov/data/2022/acs/acs1/pums/variables/SCHL.json"
+SCHL_vars <- GET(URL_SCHL)
+
+SCHL_varsnow <- fromJSON(rawToChar(SCHL_vars$content))
+SCHL_varstibble <- as_tibble(SCHL_varsnow$values$item)
+
+
+SCHL_codes <- SCHL_varstibble |>
+  pivot_longer(cols = 1:ncol(SCHL_varstibble), names_to = "code", values_to = "range") |> 
+  mutate(code = ifelse(nchar(code) == 2 & substr(code, 1, 1) == "0", substr(code, 2, 2), code))
+```
+
+```{r}
+URL_SCH <- "https://api.census.gov/data/2022/acs/acs1/pums/variables/SCH.json"
+SCH_vars <- GET(URL_SCH)
+
+SCH_varsnow <- fromJSON(rawToChar(SCH_vars$content))
+SCH_varstibble <- as_tibble(SCH_varsnow$values$item)
+
+SCH_codes <- pivot_longer(SCH_varstibble,
+                         cols = 1:ncol(SCH_varstibble),
+                         names_to = "code",
+                         values_to = "range")
+```
+
+```{r}
+URL_HHL <- "https://api.census.gov/data/2022/acs/acs1/pums/variables/HHL.json"
+HHL_vars <- GET(URL_HHL)
+
+HHL_varsnow <- fromJSON(rawToChar(HHL_vars$content))
+HHL_varstibble <- as_tibble(HHL_varsnow$values$item)
+
+HHL_codes <- pivot_longer(HHL_varstibble,
+                         cols = 1:ncol(HHL_varstibble),
+                         names_to = "code",
+                         values_to = "range")
+```
+
+```{r}
+URL_JWTRNS <- "https://api.census.gov/data/2022/acs/acs1/pums/variables/JWTRNS.json"
+JWTRNS_vars <- GET(URL_JWTRNS)
+
+JWTRNS_varsnow <- fromJSON(rawToChar(JWTRNS_vars$content))
+JWTRNS_varstibble <- as_tibble(JWTRNS_varsnow$values$item)
+
+JWTRNS_codes <- JWTRNS_varstibble |>
+  pivot_longer(cols = 1:ncol(JWTRNS_varstibble), names_to = "code", values_to = "range") |> 
+  mutate(code = ifelse(nchar(code) == 2 & substr(code, 1, 1) == "0", substr(code, 2, 2), code))
+
+```
+
+```{r}
+URL_HISPEED <- "https://api.census.gov/data/2022/acs/acs1/pums/variables/HISPEED.json"
+HISPEED_vars <- GET(URL_HISPEED)
+
+HISPEED_varsnow <- fromJSON(rawToChar(HISPEED_vars$content))
+HISPEED_varstibble <- as_tibble(HISPEED_varsnow$values$item)
+
+HISPEED_codes <- pivot_longer(HISPEED_varstibble,
+                         cols = 1:ncol(HISPEED_varstibble),
+                         names_to = "code",
+                         values_to = "range")
+```
+
+```{r}
+URL_FER <- "https://api.census.gov/data/2022/acs/acs1/pums/variables/FER.json"
+FER_vars <- GET(URL_FER)
+
+FER_varsnow <- fromJSON(rawToChar(FER_vars$content))
+FER_varstibble <- as_tibble(FER_varsnow$values$item)
+
+FER_codes <- pivot_longer(FER_varstibble,
+                         cols = 1:ncol(FER_varstibble),
+                         names_to = "code",
+                         values_to = "range")
+```
+
+```{r}
+URL_SEX <- "https://api.census.gov/data/2022/acs/acs1/pums/variables/SEX.json"
+SEX_vars <- GET(URL_SEX)
+
+SEX_varsnow <- fromJSON(rawToChar(SEX_vars$content))
+SEX_varstibble <- as_tibble(SEX_varsnow$values$item)
+
+SEX_codes <- pivot_longer(SEX_varstibble,
+                         cols = 1:ncol(SEX_varstibble),
+                         names_to = "code",
+                         values_to = "range")
+```
+
 Now that this is complete, we can finish Data Processing by creating the API.
 
 ### Create the API
@@ -148,7 +240,6 @@ get_url <- function(URL_id) {
   return(census_tib)
 }
 ```
-
 
 ```{r}
 #' Begin query building
@@ -263,84 +354,75 @@ api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var 
       rename(JWDP = median_time)
     }
   
-  if(str_detect(URL_id,"SEX")) {
+   if (str_detect(URL_id, "SEX")) {
     census_tib <- census_tib |>
-      mutate(SEX = factor(SEX, labels = c("Male", "Female")))
-    }
+      left_join(
+        SEX_codes,
+        by = c("SEX" = "code") 
+      ) |>
+      select(-SEX) |>
+      rename(SEX = range)
+  }
   
-  if(str_detect(URL_id,"FER")) {
+   if (str_detect(URL_id, "FER")) {
     census_tib <- census_tib |>
-      mutate(FER = factor(FER, labels = c("NA", "Yes", "No")))
-    }
+      left_join(
+        FER_codes,
+        by = c("FER" = "code") 
+      ) |>
+      select(-FER) |>
+      rename(FER = range)
+  }
 
-  if(str_detect(URL_id,"HISPEED")) {
+  if (str_detect(URL_id, "HISPEED")) {
     census_tib <- census_tib |>
-      mutate(FER = factor(FER, labels = c("NA", "Yes", "No")))
-    }
+      left_join(
+        HISPEED_codes,
+        by = c("HISPEED" = "code") 
+      ) |>
+      select(-HISPEED) |>
+      rename(HISPEED = range)
+  }
     
-  if(str_detect(URL_id,"SCH")) {
+  if (str_detect(URL_id, "\\bSCH\\b")) {
     census_tib <- census_tib |>
-      mutate(HHL = factor(HHL, labels = c("NA",
-                                          "No",
-                                          "Public",
-                                          "Private")))
-    }
+      left_join(
+        SCH_codes,
+        by = c("SCH" = "code") 
+      ) |>
+      select(-SCH) |>
+      rename(SCH = range)
+  }
   
-  if(str_detect(URL_id,"HHL")) {
+  if (str_detect(URL_id, "HHL")) {
     census_tib <- census_tib |>
-      mutate(HHL = factor(HHL, labels = c("NA",
-                                          "English",
-                                          "Spanish",
-                                          "Other Indo-European",
-                                          "Asian or Pacfic Island",
-                                          "Other")))
-    }
+      left_join(
+        HHL_codes,
+        by = c("HHL" = "code") 
+      ) |>
+      select(-HHL) |>
+      rename(HHL = range)
+  }
   
-  if(str_detect(URL_id,"JWTRNS")) {
+  if (str_detect(URL_id, "JWTRNS")) {
     census_tib <- census_tib |>
-      mutate(HHL = factor(HHL, labels = c("NA",
-                                          "Car",
-                                          "Bus",
-                                          "Subway",
-                                          "Train",
-                                          "Lightrail",
-                                          "Ferry",
-                                          "Taxi",
-                                          "Motorcycle",
-                                          "Bicycle",
-                                          "Foot",
-                                          "Homeworker",
-                                          "Other")))
-    }
+      left_join(
+        JWTRNS_codes,
+        by = c("JWTRNS" = "code") 
+      ) |>
+      select(-JWTRNS) |>
+      rename(JWTRNS = range)
+  }
 
-    if(str_detect(URL_id,"SCHL")) {
+      if (str_detect(URL_id, "SCHL")) {
     census_tib <- census_tib |>
-      mutate(HHL = factor(HHL, labels = c("NA",
-                                          "None completed",
-                                          "Preschool",
-                                          "Kindergarten",
-                                          "First",
-                                          "Second",
-                                          "Third",
-                                          "Fourth",
-                                          "Fifth",
-                                          "Sixth",
-                                          "Seventh",
-                                          "Eighth",
-                                          "Ninth",
-                                          "Tenth",
-                                          "Eleventh",
-                                          "Twelfth - no diploma",
-                                          "High school diploma",
-                                          "GED",
-                                          "<1yr College",
-                                          "1+yrs College - no degree",
-                                          "Associate's degree",
-                                          "Bachelor's degree",
-                                          "Master's degree",
-                                          "Professional degree",
-                                          "Doctorate degree")))
-    }
+      left_join(
+        SCHL_codes,
+        by = c("SCHL" = "code") 
+      ) |>
+      select(-SCHL) |>
+      rename(SCHL = range)
+  }
   
   
   #' Function for creating data assigns a class of census to resulting tibble
@@ -473,7 +555,6 @@ Validate that the call above returns the same output as an empty function call.
 default_cen_sum <- census_summary()
 print(default_cen_sum)
 ```
-
 
 ### Graphical Summary
 
