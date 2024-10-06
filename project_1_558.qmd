@@ -7,7 +7,7 @@ editor: visual
 
 ## Project Overview
 
-Our goal is to write functions that will manipulate and process data sets that come from a census API. Query the Public Use Microdata Sample (PUMS) Census API. Create a function that allows the user to call the API with different combinations of variables. Provide numerical and graphical summaries. We'll create generic functions to automatically summarize and plot certain returned data. Lastly, we'll write up a document via quarto to describe our thought process and give examples of using the functions.
+Our goal is to write functions that will manipulate and process data sets that come from a census API. We will query the Public Use Microdata Sample (PUMS) Census API, creating a function that allows the user to call the API with different combinations of variables. We'll create generic functions to automatically summarize and plot certain returned data, providing numerical and graphical summaries. Lastly, we'll write up a document via quarto to describe our thought process and give examples of using the functions.
 
 ## Required Packages
 
@@ -24,13 +24,13 @@ library(roxygen2)
 
 ## Data Processing
 
-Before creating a function with the API, we first had to validate the integrity of variables. Considering that we have both numerical and categorical variables, we decided to look through each and account for the factors and numerical ranges as appropriate. After validating the variables, we created the API. The API is created so that it prints out the requested categorical, numerical, and time variables with conditions and geographical subset. The user has free rein to choose one or multiple of each type of variable, and if a user would like to select multiple years of data, the multi_api function allows them to do so.
+Before creating a function with the API, we first had to validate the integrity of variables. Considering that we have both numerical and categorical variables, we decided to look through each and account for the factors and numerical ranges as appropriate. After validating the variables, we created the API. The API is created so that it prints out the requested categorical, numerical, and time variables with conditions and geographical subset. The user has free rein to choose one or multiple of each type of variable, and if a user would like to select multiple years of data, the `multi_api` function allows them to do so.
 
 ### Prepare Time Variables
 
-The time variables need to be handled slightly differently than the other numeric variables. Since there are NA's, and also since we are working with a range of values, we have decided to find the median (or exact middle) of each time to use for JWAP and JWDP. In particular, JWAP is the time of arrival at work by hour and minute, and JWDP is the time of departure for work by hour and minute. Before we run the API function, we first decided to create a median time table for JWAP and JWDP.
+The time variables need to be handled slightly differently than the other numeric variables. Since there are NA's, and also since we are working with a range of values, we have decided to find the median (or exact middle) of each time to use for `JWAP` and `JWDP`. In particular, `JWAP` is the time of arrival at work by hour and minute, and `JWDP` is the time of departure for work by hour and minute. Before we run the API function, we first decided to create a median time table for `JWAP` and `JWDP`.
 
-#### First, create JWAP table
+First, create `JWAP` table:
 
 ```{r}
 URL_jwap <- "https://api.census.gov/data/2022/acs/acs1/pums/variables/JWAP.json"
@@ -70,7 +70,7 @@ jwap_time_table$code <- as.numeric(jwap_time_table$code)
 jwap_time_table
 ```
 
-#### Second, create JWDP table
+Second, create `JWDP` table:
 
 ```{r}
 URL_jwdp <- "https://api.census.gov/data/2022/acs/acs1/pums/variables/JWDP.json"
@@ -110,11 +110,13 @@ jwdp_time_table$code <- as.numeric(jwdp_time_table$code)
 jwdp_time_table
 ```
 
-Now that this is complete, we can finish Data processing by creating the API.
+Now that this is complete, we can finish Data Processing by creating the API.
 
 ### Create the API
 
-The API starts by creating blank variables so that a clean slate is ran each time. Then, valid variables of each possible user selection (numerical, categorical, date, and geographical level) are listed
+The API starts by creating blank variables so that a clean slate is run each time. Then, global valid variables of each possible user selection (numerical, categorical, date, and geographical level) are listed for use in the API and later functions. Specific decisions are outlined in documentation and comments within the function.
+
+First, global variables are initialized and valid inputs are established.
 
 ```{r}
 #' setup global variables to be returned
@@ -130,7 +132,25 @@ valid_num_var <- c("AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP", "PWGTP")
 valid_date_var <- c("JWAP", "JWDP")
 valid_cat_var <- c("FER", "HHL", "HISPEED", "JWTRNS", "SCH", "SCHL", "SEX")
 valid_geo_level <- c("ALL", "REGION", "DIVISION", "STATE")
+```
 
+Then, a helper function is created:
+
+```{r}
+get_url <- function(URL_id) {
+  census_info <- GET(URL_id)
+  census_df <- fromJSON(rawToChar(census_info$content))
+  
+  #create a tibble 
+  census_tib <- census_df |>
+    as_tibble() |>
+    row_to_names(row_number = 1)
+  return(census_tib)
+}
+```
+
+
+```{r}
 #' Begin query building
 #' Numeric variable PWGTP is required for function and always called so is not included as a default that can be overwritten
 #' @noRd
@@ -201,11 +221,12 @@ api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var 
   
   #print(URL_id)
   
-  #query the api now
+  #query the api now via a helper function
+  #GET(URL_id)
   census_info <- GET(URL_id)
   census_df <- fromJSON(rawToChar(census_info$content))
-  
-  #create a tibble 
+
+  #create a tibble
   census_tib <- census_df |>
     as_tibble() |>
     row_to_names(row_number = 1)
@@ -242,6 +263,26 @@ api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var 
       rename(JWDP = median_time)
     }
   
+  if(str_detect(URL_id,"SEX")) {
+    census_tib <- census_tib |>
+      mutate(SEX = factor(SEX, labels = c("Male", "Female")))
+    }
+  
+  if(str_detect(URL_id,"FER")) {
+    census_tib <- census_tib |>
+      mutate(FER = factor(FER, labels = c("NA", "Yes", "No")))
+    }
+  
+  if(str_detect(URL_id,"HHL")) {
+    census_tib <- census_tib |>
+      mutate(HHL = factor(HHL, labels = c("NA",
+                                          "English",
+                                          "Spanish",
+                                          "Other Indo-European",
+                                          "Asian or Pacfic Island",
+                                          "Other")))
+    }
+  
   #' Function for creating data assigns a class of census to resulting tibble
   #' @noRd
   
@@ -257,11 +298,11 @@ api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var 
   census_tib <<- census_tib
   
   
-    return(list(
-    num_var = num_var,
-    cat_var = cat_var,
-    census_tib = census_tib
-    ))
+  return(list(
+  num_var = num_var,
+  cat_var = cat_var,
+  census_tib = census_tib
+  ))
   
 }
 ```
@@ -294,7 +335,7 @@ api_query(2016, num_var = c("GASP", "GRPIP", "JWAP"), "FER")
 multi_api(surv_years = c("2015", "2021"), num_var = c("JWDP","GRPIP","GRPIP"), cat_var = c("FER", "HHL"), condition="AGEP=30", geo_subset= "STATE:19")
 ```
 
-Final run to reflect assigned \`state\`: 11 / DC
+Final run to reflect assigned \`state\`: 11 (i.e., DC)
 
 ```{r}
 default_query <- api_query()
@@ -355,7 +396,7 @@ census_summary <- function(tib = census_tib, cat_var_s = c(intersect(colnames(ce
 }
 ```
 
-Test out this function by running summary(*your_census_tibble*) on something you've returned from your census API function.
+Test out this function by running `census_summary` on `SEX` and `AGEP` variables per default `api_query`.
 
 ```{r}
 cen_sum <- census_summary(cat_var_s = "SEX", num_var_s = "AGEP")
@@ -367,7 +408,7 @@ print(default_cen_sum)
 
 ### Graphical Summary
 
-Similarly, let's create a generic plot() function for a census class tibble. Require the user to specify one categorical variable and one numeric variable for plotting purposes.
+Create a generic `plot()` function for a census class tibble. Require the user to specify one categorical variable and one numeric variable for plotting purposes.
 
 ```{r}
 census_plot <- function(tib = census_tib, cat_var_s, num_var_s) {
@@ -402,6 +443,5 @@ census_plot <- function(tib = census_tib, cat_var_s, num_var_s) {
 Test \`census_plot\` function
 
 ```{r}
-
 census_plot(cat_var_s = "SEX", num_var_s = "AGEP")
 ```
