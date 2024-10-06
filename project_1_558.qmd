@@ -272,6 +272,19 @@ api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var 
     census_tib <- census_tib |>
       mutate(FER = factor(FER, labels = c("NA", "Yes", "No")))
     }
+
+  if(str_detect(URL_id,"HISPEED")) {
+    census_tib <- census_tib |>
+      mutate(FER = factor(FER, labels = c("NA", "Yes", "No")))
+    }
+    
+  if(str_detect(URL_id,"SCH")) {
+    census_tib <- census_tib |>
+      mutate(HHL = factor(HHL, labels = c("NA",
+                                          "No",
+                                          "Public",
+                                          "Private")))
+    }
   
   if(str_detect(URL_id,"HHL")) {
     census_tib <- census_tib |>
@@ -282,6 +295,54 @@ api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var 
                                           "Asian or Pacfic Island",
                                           "Other")))
     }
+  
+  if(str_detect(URL_id,"JWTRNS")) {
+    census_tib <- census_tib |>
+      mutate(HHL = factor(HHL, labels = c("NA",
+                                          "Car",
+                                          "Bus",
+                                          "Subway",
+                                          "Train",
+                                          "Lightrail",
+                                          "Ferry",
+                                          "Taxi",
+                                          "Motorcycle",
+                                          "Bicycle",
+                                          "Foot",
+                                          "Homeworker",
+                                          "Other")))
+    }
+
+    if(str_detect(URL_id,"SCHL")) {
+    census_tib <- census_tib |>
+      mutate(HHL = factor(HHL, labels = c("NA",
+                                          "None completed",
+                                          "Preschool",
+                                          "Kindergarten",
+                                          "First",
+                                          "Second",
+                                          "Third",
+                                          "Fourth",
+                                          "Fifth",
+                                          "Sixth",
+                                          "Seventh",
+                                          "Eighth",
+                                          "Ninth",
+                                          "Tenth",
+                                          "Eleventh",
+                                          "Twelfth - no diploma",
+                                          "High school diploma",
+                                          "GED",
+                                          "<1yr College",
+                                          "1+yrs College - no degree",
+                                          "Associate's degree",
+                                          "Bachelor's degree",
+                                          "Master's degree",
+                                          "Professional degree",
+                                          "Doctorate degree",
+                                          "Other")))
+    }
+  
   
   #' Function for creating data assigns a class of census to resulting tibble
   #' @noRd
@@ -452,5 +513,7 @@ census_plot <- function(tib = census_tib, cat_var_s, num_var_s) {
 Test the \`census_plot\` function on `SEX` and `AGEP` variables per the default `api_query`.
 
 ```{r}
+#| warning: false
+
 census_plot(cat_var_s = "SEX", num_var_s = "AGEP")
 ```
