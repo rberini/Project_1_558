@@ -110,6 +110,10 @@ jwdp_time_table$code <- as.numeric(jwdp_time_table$code)
 jwdp_time_table
 ```
 
+###Prepare Factor Levels
+
+For categorical variables, call variable descriptions to retrieve factor levels and labels.
+
 ```{r}
 
 URL_SCHL <- "https://api.census.gov/data/2022/acs/acs1/pums/variables/SCHL.json"
