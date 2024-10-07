@@ -522,6 +522,7 @@ census_summary <- function(tib = census_tib, cat_var_s = c(intersect(colnames(ce
   sample_sds <- list()
   all_counts <- list()
   
+  #calculates all numericals minus jwdp and jwap and the weights
   for(name in num_var_s) {
     if(name %in% colnames(tib) &
        name %in% valid_num_var &
@@ -531,6 +532,7 @@ census_summary <- function(tib = census_tib, cat_var_s = c(intersect(colnames(ce
       sample_means[[name]] <- sample_mean
       sample_sds[[name]] <- sample_sd
     }
+    #calculates times in a different way due to NA's and time
     else if(name %in% c("JWAP", "JWDP")) {
       tib <- na.omit(tib)
       sample_mean <- (sum(as.numeric(tib[[name]]) * tib$PWGTP)/sum(tib$PWGTP))
@@ -545,6 +547,7 @@ census_summary <- function(tib = census_tib, cat_var_s = c(intersect(colnames(ce
     }
   }
   
+  #categorical variable counts
   for(name in cat_var_s) {
     if(name %in% colnames(tib) & name %in% valid_cat_var) {
       counts <- tib |>
@@ -603,7 +606,7 @@ census_plot <- function(tib = census_tib, cat_var_s, num_var_s) {
 #' defaults most recent tibble returned from api_query
 #' @noRd
   
-    
+  #plots numerial using tib sans weight variable  
   for(name in num_var_s) {
     if(name %in% colnames(tib) &
        name %in% valid_num_var &
@@ -614,6 +617,7 @@ census_plot <- function(tib = census_tib, cat_var_s, num_var_s) {
       }
   }
   
+  #plots categorical using tib
   for(name in cat_var_s) {
     if(name %in% colnames(tib) &
        name %in% valid_cat_var) {
