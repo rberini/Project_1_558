@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.5.57">
+<meta name="generator" content="quarto-1.3.353">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -23,7 +23,7 @@ ul.task-list li input[type="checkbox"] {
 }
 /* CSS for syntax highlighting */
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -34,7 +34,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
   { counter-reset: source-line 0; }
@@ -79,13 +79,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   "collapse-after": 3,
   "panel-placement": "start",
   "type": "textbox",
-  "limit": 50,
-  "keyboard-shortcut": [
-    "f",
-    "/",
-    "s"
-  ],
-  "show-item-context": false,
+  "limit": 20,
   "language": {
     "search-no-results-text": "No results",
     "search-matching-documents-text": "matching documents",
@@ -94,10 +88,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     "search-more-match-text": "more match in this document",
     "search-more-matches-text": "more matches in this document",
     "search-clear-button-title": "Clear",
-    "search-text-placeholder": "",
     "search-detached-cancel-button-title": "Cancel",
-    "search-submit-button-title": "Submit",
-    "search-label": "Search"
+    "search-submit-button-title": "Submit"
   }
 }</script>
 
@@ -136,9 +128,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </div>
   
 
-
 </header>
-
 
 <section id="project-overview" class="level2">
 <h2 class="anchored" data-anchor-id="project-overview">Project Overview</h2>
@@ -270,8 +260,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 # ℹ 141 more rows</code></pre>
 </div>
 </div>
-<p>###Prepare Factor Levels</p>
-<p>For categorical variables, call variable descriptions to retrieve factor levels and labels.</p>
+</section>
+<section id="prepare-factor-levels" class="level3">
+<h3 class="anchored" data-anchor-id="prepare-factor-levels">Prepare Factor Levels</h3>
+<p>For categorical variables, call variable descriptions to retrieve factor levels and labels. Then, with similar logic to the time variables, make sure that the corresponding factors are in the correct places. Furthermore, make sure the logic is cohesive and able to be called by the API.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>URL_SCHL <span class="ot">&lt;-</span> <span class="st">"https://api.census.gov/data/2022/acs/acs1/pums/variables/SCHL.json"</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>SCHL_vars <span class="ot">&lt;-</span> <span class="fu">GET</span>(URL_SCHL)</span>
@@ -376,7 +368,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>valid_cat_var <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"FER"</span>, <span class="st">"HHL"</span>, <span class="st">"HISPEED"</span>, <span class="st">"JWTRNS"</span>, <span class="st">"SCH"</span>, <span class="st">"SCHL"</span>, <span class="st">"SEX"</span>)</span>
 <span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>valid_geo_level <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"ALL"</span>, <span class="st">"REGION"</span>, <span class="st">"DIVISION"</span>, <span class="st">"STATE"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>Then, a helper function is created:</p>
+<p>Then, a helper function is created. Note that the helper function both takes in the URL with <code>GET</code> and also creates a tibble. The tibble is then formatted, wrangled, and massaged to be nice and neat. The tibble deletes duplicate columns and uses all the ranges assigned before to correctly display the categorical factors.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>get_url <span class="ot">&lt;-</span> <span class="cf">function</span>(URL_id) {</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  census_info <span class="ot">&lt;-</span> <span class="fu">GET</span>(URL_id)</span>
@@ -419,93 +411,102 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb14-39"><a href="#cb14-39" aria-hidden="true" tabindex="-1"></a>      <span class="fu">rename</span>(<span class="at">JWDP =</span> median_time)</span>
 <span id="cb14-40"><a href="#cb14-40" aria-hidden="true" tabindex="-1"></a>    }</span>
 <span id="cb14-41"><a href="#cb14-41" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb14-42"><a href="#cb14-42" aria-hidden="true" tabindex="-1"></a>   <span class="cf">if</span> (<span class="fu">str_detect</span>(URL_id, <span class="st">"SEX"</span>)) {</span>
-<span id="cb14-43"><a href="#cb14-43" aria-hidden="true" tabindex="-1"></a>    census_tib <span class="ot">&lt;-</span> census_tib <span class="sc">|&gt;</span></span>
-<span id="cb14-44"><a href="#cb14-44" aria-hidden="true" tabindex="-1"></a>      <span class="fu">left_join</span>(</span>
-<span id="cb14-45"><a href="#cb14-45" aria-hidden="true" tabindex="-1"></a>        SEX_codes,</span>
-<span id="cb14-46"><a href="#cb14-46" aria-hidden="true" tabindex="-1"></a>        <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"SEX"</span> <span class="ot">=</span> <span class="st">"code"</span>) </span>
-<span id="cb14-47"><a href="#cb14-47" aria-hidden="true" tabindex="-1"></a>      ) <span class="sc">|&gt;</span></span>
-<span id="cb14-48"><a href="#cb14-48" aria-hidden="true" tabindex="-1"></a>      <span class="fu">select</span>(<span class="sc">-</span>SEX) <span class="sc">|&gt;</span></span>
-<span id="cb14-49"><a href="#cb14-49" aria-hidden="true" tabindex="-1"></a>      <span class="fu">rename</span>(<span class="at">SEX =</span> range)</span>
-<span id="cb14-50"><a href="#cb14-50" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb14-51"><a href="#cb14-51" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb14-52"><a href="#cb14-52" aria-hidden="true" tabindex="-1"></a>   <span class="cf">if</span> (<span class="fu">str_detect</span>(URL_id, <span class="st">"FER"</span>)) {</span>
-<span id="cb14-53"><a href="#cb14-53" aria-hidden="true" tabindex="-1"></a>    census_tib <span class="ot">&lt;-</span> census_tib <span class="sc">|&gt;</span></span>
-<span id="cb14-54"><a href="#cb14-54" aria-hidden="true" tabindex="-1"></a>      <span class="fu">left_join</span>(</span>
-<span id="cb14-55"><a href="#cb14-55" aria-hidden="true" tabindex="-1"></a>        FER_codes,</span>
-<span id="cb14-56"><a href="#cb14-56" aria-hidden="true" tabindex="-1"></a>        <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"FER"</span> <span class="ot">=</span> <span class="st">"code"</span>) </span>
-<span id="cb14-57"><a href="#cb14-57" aria-hidden="true" tabindex="-1"></a>      ) <span class="sc">|&gt;</span></span>
-<span id="cb14-58"><a href="#cb14-58" aria-hidden="true" tabindex="-1"></a>      <span class="fu">select</span>(<span class="sc">-</span>FER) <span class="sc">|&gt;</span></span>
-<span id="cb14-59"><a href="#cb14-59" aria-hidden="true" tabindex="-1"></a>      <span class="fu">rename</span>(<span class="at">FER =</span> range)</span>
-<span id="cb14-60"><a href="#cb14-60" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb14-61"><a href="#cb14-61" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-62"><a href="#cb14-62" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">str_detect</span>(URL_id, <span class="st">"HISPEED"</span>)) {</span>
-<span id="cb14-63"><a href="#cb14-63" aria-hidden="true" tabindex="-1"></a>    census_tib <span class="ot">&lt;-</span> census_tib <span class="sc">|&gt;</span></span>
-<span id="cb14-64"><a href="#cb14-64" aria-hidden="true" tabindex="-1"></a>      <span class="fu">left_join</span>(</span>
-<span id="cb14-65"><a href="#cb14-65" aria-hidden="true" tabindex="-1"></a>        HISPEED_codes,</span>
-<span id="cb14-66"><a href="#cb14-66" aria-hidden="true" tabindex="-1"></a>        <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"HISPEED"</span> <span class="ot">=</span> <span class="st">"code"</span>) </span>
-<span id="cb14-67"><a href="#cb14-67" aria-hidden="true" tabindex="-1"></a>      ) <span class="sc">|&gt;</span></span>
-<span id="cb14-68"><a href="#cb14-68" aria-hidden="true" tabindex="-1"></a>      <span class="fu">select</span>(<span class="sc">-</span>HISPEED) <span class="sc">|&gt;</span></span>
-<span id="cb14-69"><a href="#cb14-69" aria-hidden="true" tabindex="-1"></a>      <span class="fu">rename</span>(<span class="at">HISPEED =</span> range)</span>
-<span id="cb14-70"><a href="#cb14-70" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb14-71"><a href="#cb14-71" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb14-72"><a href="#cb14-72" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">str_detect</span>(URL_id, <span class="st">"</span><span class="sc">\\</span><span class="st">bSCH</span><span class="sc">\\</span><span class="st">b"</span>)) {</span>
-<span id="cb14-73"><a href="#cb14-73" aria-hidden="true" tabindex="-1"></a>    census_tib <span class="ot">&lt;-</span> census_tib <span class="sc">|&gt;</span></span>
-<span id="cb14-74"><a href="#cb14-74" aria-hidden="true" tabindex="-1"></a>      <span class="fu">left_join</span>(</span>
-<span id="cb14-75"><a href="#cb14-75" aria-hidden="true" tabindex="-1"></a>        SCH_codes,</span>
-<span id="cb14-76"><a href="#cb14-76" aria-hidden="true" tabindex="-1"></a>        <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"SCH"</span> <span class="ot">=</span> <span class="st">"code"</span>) </span>
-<span id="cb14-77"><a href="#cb14-77" aria-hidden="true" tabindex="-1"></a>      ) <span class="sc">|&gt;</span></span>
-<span id="cb14-78"><a href="#cb14-78" aria-hidden="true" tabindex="-1"></a>      <span class="fu">select</span>(<span class="sc">-</span>SCH) <span class="sc">|&gt;</span></span>
-<span id="cb14-79"><a href="#cb14-79" aria-hidden="true" tabindex="-1"></a>      <span class="fu">rename</span>(<span class="at">SCH =</span> range)</span>
-<span id="cb14-80"><a href="#cb14-80" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb14-81"><a href="#cb14-81" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb14-82"><a href="#cb14-82" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">str_detect</span>(URL_id, <span class="st">"HHL"</span>)) {</span>
-<span id="cb14-83"><a href="#cb14-83" aria-hidden="true" tabindex="-1"></a>    census_tib <span class="ot">&lt;-</span> census_tib <span class="sc">|&gt;</span></span>
-<span id="cb14-84"><a href="#cb14-84" aria-hidden="true" tabindex="-1"></a>      <span class="fu">left_join</span>(</span>
-<span id="cb14-85"><a href="#cb14-85" aria-hidden="true" tabindex="-1"></a>        HHL_codes,</span>
-<span id="cb14-86"><a href="#cb14-86" aria-hidden="true" tabindex="-1"></a>        <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"HHL"</span> <span class="ot">=</span> <span class="st">"code"</span>) </span>
-<span id="cb14-87"><a href="#cb14-87" aria-hidden="true" tabindex="-1"></a>      ) <span class="sc">|&gt;</span></span>
-<span id="cb14-88"><a href="#cb14-88" aria-hidden="true" tabindex="-1"></a>      <span class="fu">select</span>(<span class="sc">-</span>HHL) <span class="sc">|&gt;</span></span>
-<span id="cb14-89"><a href="#cb14-89" aria-hidden="true" tabindex="-1"></a>      <span class="fu">rename</span>(<span class="at">HHL =</span> range)</span>
-<span id="cb14-90"><a href="#cb14-90" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb14-91"><a href="#cb14-91" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb14-92"><a href="#cb14-92" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">str_detect</span>(URL_id, <span class="st">"JWTRNS"</span>)) {</span>
-<span id="cb14-93"><a href="#cb14-93" aria-hidden="true" tabindex="-1"></a>    census_tib <span class="ot">&lt;-</span> census_tib <span class="sc">|&gt;</span></span>
-<span id="cb14-94"><a href="#cb14-94" aria-hidden="true" tabindex="-1"></a>      <span class="fu">left_join</span>(</span>
-<span id="cb14-95"><a href="#cb14-95" aria-hidden="true" tabindex="-1"></a>        JWTRNS_codes,</span>
-<span id="cb14-96"><a href="#cb14-96" aria-hidden="true" tabindex="-1"></a>        <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"JWTRNS"</span> <span class="ot">=</span> <span class="st">"code"</span>) </span>
-<span id="cb14-97"><a href="#cb14-97" aria-hidden="true" tabindex="-1"></a>      ) <span class="sc">|&gt;</span></span>
-<span id="cb14-98"><a href="#cb14-98" aria-hidden="true" tabindex="-1"></a>      <span class="fu">select</span>(<span class="sc">-</span>JWTRNS) <span class="sc">|&gt;</span></span>
-<span id="cb14-99"><a href="#cb14-99" aria-hidden="true" tabindex="-1"></a>      <span class="fu">rename</span>(<span class="at">JWTRNS =</span> range)</span>
-<span id="cb14-100"><a href="#cb14-100" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb14-101"><a href="#cb14-101" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-102"><a href="#cb14-102" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (<span class="fu">str_detect</span>(URL_id, <span class="st">"SCHL"</span>)) {</span>
-<span id="cb14-103"><a href="#cb14-103" aria-hidden="true" tabindex="-1"></a>    census_tib <span class="ot">&lt;-</span> census_tib <span class="sc">|&gt;</span></span>
-<span id="cb14-104"><a href="#cb14-104" aria-hidden="true" tabindex="-1"></a>      <span class="fu">left_join</span>(</span>
-<span id="cb14-105"><a href="#cb14-105" aria-hidden="true" tabindex="-1"></a>        SCHL_codes,</span>
-<span id="cb14-106"><a href="#cb14-106" aria-hidden="true" tabindex="-1"></a>        <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"SCHL"</span> <span class="ot">=</span> <span class="st">"code"</span>) </span>
-<span id="cb14-107"><a href="#cb14-107" aria-hidden="true" tabindex="-1"></a>      ) <span class="sc">|&gt;</span></span>
-<span id="cb14-108"><a href="#cb14-108" aria-hidden="true" tabindex="-1"></a>      <span class="fu">select</span>(<span class="sc">-</span>SCHL) <span class="sc">|&gt;</span></span>
-<span id="cb14-109"><a href="#cb14-109" aria-hidden="true" tabindex="-1"></a>      <span class="fu">rename</span>(<span class="at">SCHL =</span> range)</span>
-<span id="cb14-110"><a href="#cb14-110" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb14-111"><a href="#cb14-111" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb14-112"><a href="#cb14-112" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb14-113"><a href="#cb14-113" aria-hidden="true" tabindex="-1"></a>  <span class="co">#' Function for creating data assigns a class of census to resulting tibble</span></span>
-<span id="cb14-114"><a href="#cb14-114" aria-hidden="true" tabindex="-1"></a>  <span class="co">#' @noRd</span></span>
-<span id="cb14-115"><a href="#cb14-115" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb14-116"><a href="#cb14-116" aria-hidden="true" tabindex="-1"></a>  <span class="fu">class</span>(census_tib) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"census"</span>, <span class="fu">class</span>(census_tib))</span>
-<span id="cb14-117"><a href="#cb14-117" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb14-118"><a href="#cb14-118" aria-hidden="true" tabindex="-1"></a>  <span class="co">#' Ensure resulting tibble (census_tib) and selected variables are returned to the global environment for use in other functions and analysis</span></span>
-<span id="cb14-119"><a href="#cb14-119" aria-hidden="true" tabindex="-1"></a>  <span class="co">#' Superassigmment operator (&lt;&lt;-) is intentional to ensure local variables are passed to the global environment</span></span>
-<span id="cb14-120"><a href="#cb14-120" aria-hidden="true" tabindex="-1"></a>  <span class="co">#' A list including num_var, cat_var and census_tib is returned for redudancy and convenience so user assign function to an object and then specify the corresponding version of the variable created</span></span>
-<span id="cb14-121"><a href="#cb14-121" aria-hidden="true" tabindex="-1"></a>  <span class="co">#' @noRd</span></span>
-<span id="cb14-122"><a href="#cb14-122" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb14-123"><a href="#cb14-123" aria-hidden="true" tabindex="-1"></a>  num_var <span class="ot">&lt;&lt;-</span> num_var</span>
-<span id="cb14-124"><a href="#cb14-124" aria-hidden="true" tabindex="-1"></a>  cat_var <span class="ot">&lt;&lt;-</span> cat_var</span>
-<span id="cb14-125"><a href="#cb14-125" aria-hidden="true" tabindex="-1"></a>  census_tib <span class="ot">&lt;&lt;-</span> census_tib</span>
-<span id="cb14-126"><a href="#cb14-126" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb14-127"><a href="#cb14-127" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb14-42"><a href="#cb14-42" aria-hidden="true" tabindex="-1"></a>  <span class="co">#format the sex based on above designated factor level</span></span>
+<span id="cb14-43"><a href="#cb14-43" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">str_detect</span>(URL_id, <span class="st">"SEX"</span>)) {</span>
+<span id="cb14-44"><a href="#cb14-44" aria-hidden="true" tabindex="-1"></a>    census_tib <span class="ot">&lt;-</span> census_tib <span class="sc">|&gt;</span></span>
+<span id="cb14-45"><a href="#cb14-45" aria-hidden="true" tabindex="-1"></a>      <span class="fu">left_join</span>(</span>
+<span id="cb14-46"><a href="#cb14-46" aria-hidden="true" tabindex="-1"></a>        SEX_codes,</span>
+<span id="cb14-47"><a href="#cb14-47" aria-hidden="true" tabindex="-1"></a>        <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"SEX"</span> <span class="ot">=</span> <span class="st">"code"</span>) </span>
+<span id="cb14-48"><a href="#cb14-48" aria-hidden="true" tabindex="-1"></a>      ) <span class="sc">|&gt;</span></span>
+<span id="cb14-49"><a href="#cb14-49" aria-hidden="true" tabindex="-1"></a>      <span class="fu">select</span>(<span class="sc">-</span>SEX) <span class="sc">|&gt;</span></span>
+<span id="cb14-50"><a href="#cb14-50" aria-hidden="true" tabindex="-1"></a>      <span class="fu">rename</span>(<span class="at">SEX =</span> range)</span>
+<span id="cb14-51"><a href="#cb14-51" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb14-52"><a href="#cb14-52" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb14-53"><a href="#cb14-53" aria-hidden="true" tabindex="-1"></a>  <span class="co">#format the fer based on above designated factor level</span></span>
+<span id="cb14-54"><a href="#cb14-54" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">str_detect</span>(URL_id, <span class="st">"FER"</span>)) {</span>
+<span id="cb14-55"><a href="#cb14-55" aria-hidden="true" tabindex="-1"></a>    census_tib <span class="ot">&lt;-</span> census_tib <span class="sc">|&gt;</span></span>
+<span id="cb14-56"><a href="#cb14-56" aria-hidden="true" tabindex="-1"></a>      <span class="fu">left_join</span>(</span>
+<span id="cb14-57"><a href="#cb14-57" aria-hidden="true" tabindex="-1"></a>        FER_codes,</span>
+<span id="cb14-58"><a href="#cb14-58" aria-hidden="true" tabindex="-1"></a>        <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"FER"</span> <span class="ot">=</span> <span class="st">"code"</span>) </span>
+<span id="cb14-59"><a href="#cb14-59" aria-hidden="true" tabindex="-1"></a>      ) <span class="sc">|&gt;</span></span>
+<span id="cb14-60"><a href="#cb14-60" aria-hidden="true" tabindex="-1"></a>      <span class="fu">select</span>(<span class="sc">-</span>FER) <span class="sc">|&gt;</span></span>
+<span id="cb14-61"><a href="#cb14-61" aria-hidden="true" tabindex="-1"></a>      <span class="fu">rename</span>(<span class="at">FER =</span> range)</span>
+<span id="cb14-62"><a href="#cb14-62" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb14-63"><a href="#cb14-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-64"><a href="#cb14-64" aria-hidden="true" tabindex="-1"></a>  <span class="co">#format the HISPEED based on above designated factor level</span></span>
+<span id="cb14-65"><a href="#cb14-65" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">str_detect</span>(URL_id, <span class="st">"HISPEED"</span>)) {</span>
+<span id="cb14-66"><a href="#cb14-66" aria-hidden="true" tabindex="-1"></a>    census_tib <span class="ot">&lt;-</span> census_tib <span class="sc">|&gt;</span></span>
+<span id="cb14-67"><a href="#cb14-67" aria-hidden="true" tabindex="-1"></a>      <span class="fu">left_join</span>(</span>
+<span id="cb14-68"><a href="#cb14-68" aria-hidden="true" tabindex="-1"></a>        HISPEED_codes,</span>
+<span id="cb14-69"><a href="#cb14-69" aria-hidden="true" tabindex="-1"></a>        <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"HISPEED"</span> <span class="ot">=</span> <span class="st">"code"</span>) </span>
+<span id="cb14-70"><a href="#cb14-70" aria-hidden="true" tabindex="-1"></a>      ) <span class="sc">|&gt;</span></span>
+<span id="cb14-71"><a href="#cb14-71" aria-hidden="true" tabindex="-1"></a>      <span class="fu">select</span>(<span class="sc">-</span>HISPEED) <span class="sc">|&gt;</span></span>
+<span id="cb14-72"><a href="#cb14-72" aria-hidden="true" tabindex="-1"></a>      <span class="fu">rename</span>(<span class="at">HISPEED =</span> range)</span>
+<span id="cb14-73"><a href="#cb14-73" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb14-74"><a href="#cb14-74" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb14-75"><a href="#cb14-75" aria-hidden="true" tabindex="-1"></a>  <span class="co">#format the SCH based on above designated factor level</span></span>
+<span id="cb14-76"><a href="#cb14-76" aria-hidden="true" tabindex="-1"></a>  <span class="co">#notice we had to take SCH as an exact string to not mess with SCHL</span></span>
+<span id="cb14-77"><a href="#cb14-77" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">str_detect</span>(URL_id, <span class="st">"</span><span class="sc">\\</span><span class="st">bSCH</span><span class="sc">\\</span><span class="st">b"</span>)) {</span>
+<span id="cb14-78"><a href="#cb14-78" aria-hidden="true" tabindex="-1"></a>    census_tib <span class="ot">&lt;-</span> census_tib <span class="sc">|&gt;</span></span>
+<span id="cb14-79"><a href="#cb14-79" aria-hidden="true" tabindex="-1"></a>      <span class="fu">left_join</span>(</span>
+<span id="cb14-80"><a href="#cb14-80" aria-hidden="true" tabindex="-1"></a>        SCH_codes,</span>
+<span id="cb14-81"><a href="#cb14-81" aria-hidden="true" tabindex="-1"></a>        <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"SCH"</span> <span class="ot">=</span> <span class="st">"code"</span>) </span>
+<span id="cb14-82"><a href="#cb14-82" aria-hidden="true" tabindex="-1"></a>      ) <span class="sc">|&gt;</span></span>
+<span id="cb14-83"><a href="#cb14-83" aria-hidden="true" tabindex="-1"></a>      <span class="fu">select</span>(<span class="sc">-</span>SCH) <span class="sc">|&gt;</span></span>
+<span id="cb14-84"><a href="#cb14-84" aria-hidden="true" tabindex="-1"></a>      <span class="fu">rename</span>(<span class="at">SCH =</span> range)</span>
+<span id="cb14-85"><a href="#cb14-85" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb14-86"><a href="#cb14-86" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb14-87"><a href="#cb14-87" aria-hidden="true" tabindex="-1"></a>  <span class="co">#format the HHL based on above designated factor level</span></span>
+<span id="cb14-88"><a href="#cb14-88" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">str_detect</span>(URL_id, <span class="st">"HHL"</span>)) {</span>
+<span id="cb14-89"><a href="#cb14-89" aria-hidden="true" tabindex="-1"></a>    census_tib <span class="ot">&lt;-</span> census_tib <span class="sc">|&gt;</span></span>
+<span id="cb14-90"><a href="#cb14-90" aria-hidden="true" tabindex="-1"></a>      <span class="fu">left_join</span>(</span>
+<span id="cb14-91"><a href="#cb14-91" aria-hidden="true" tabindex="-1"></a>        HHL_codes,</span>
+<span id="cb14-92"><a href="#cb14-92" aria-hidden="true" tabindex="-1"></a>        <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"HHL"</span> <span class="ot">=</span> <span class="st">"code"</span>) </span>
+<span id="cb14-93"><a href="#cb14-93" aria-hidden="true" tabindex="-1"></a>      ) <span class="sc">|&gt;</span></span>
+<span id="cb14-94"><a href="#cb14-94" aria-hidden="true" tabindex="-1"></a>      <span class="fu">select</span>(<span class="sc">-</span>HHL) <span class="sc">|&gt;</span></span>
+<span id="cb14-95"><a href="#cb14-95" aria-hidden="true" tabindex="-1"></a>      <span class="fu">rename</span>(<span class="at">HHL =</span> range)</span>
+<span id="cb14-96"><a href="#cb14-96" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb14-97"><a href="#cb14-97" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb14-98"><a href="#cb14-98" aria-hidden="true" tabindex="-1"></a>  <span class="co">#format the JWTRNS based on above designated factor level</span></span>
+<span id="cb14-99"><a href="#cb14-99" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">str_detect</span>(URL_id, <span class="st">"JWTRNS"</span>)) {</span>
+<span id="cb14-100"><a href="#cb14-100" aria-hidden="true" tabindex="-1"></a>    census_tib <span class="ot">&lt;-</span> census_tib <span class="sc">|&gt;</span></span>
+<span id="cb14-101"><a href="#cb14-101" aria-hidden="true" tabindex="-1"></a>      <span class="fu">left_join</span>(</span>
+<span id="cb14-102"><a href="#cb14-102" aria-hidden="true" tabindex="-1"></a>        JWTRNS_codes,</span>
+<span id="cb14-103"><a href="#cb14-103" aria-hidden="true" tabindex="-1"></a>        <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"JWTRNS"</span> <span class="ot">=</span> <span class="st">"code"</span>) </span>
+<span id="cb14-104"><a href="#cb14-104" aria-hidden="true" tabindex="-1"></a>      ) <span class="sc">|&gt;</span></span>
+<span id="cb14-105"><a href="#cb14-105" aria-hidden="true" tabindex="-1"></a>      <span class="fu">select</span>(<span class="sc">-</span>JWTRNS) <span class="sc">|&gt;</span></span>
+<span id="cb14-106"><a href="#cb14-106" aria-hidden="true" tabindex="-1"></a>      <span class="fu">rename</span>(<span class="at">JWTRNS =</span> range)</span>
+<span id="cb14-107"><a href="#cb14-107" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb14-108"><a href="#cb14-108" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-109"><a href="#cb14-109" aria-hidden="true" tabindex="-1"></a>  <span class="co">#format the SCHL based on above designated factor level</span></span>
+<span id="cb14-110"><a href="#cb14-110" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">str_detect</span>(URL_id, <span class="st">"SCHL"</span>)) {</span>
+<span id="cb14-111"><a href="#cb14-111" aria-hidden="true" tabindex="-1"></a>    census_tib <span class="ot">&lt;-</span> census_tib <span class="sc">|&gt;</span></span>
+<span id="cb14-112"><a href="#cb14-112" aria-hidden="true" tabindex="-1"></a>      <span class="fu">left_join</span>(</span>
+<span id="cb14-113"><a href="#cb14-113" aria-hidden="true" tabindex="-1"></a>        SCHL_codes,</span>
+<span id="cb14-114"><a href="#cb14-114" aria-hidden="true" tabindex="-1"></a>        <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"SCHL"</span> <span class="ot">=</span> <span class="st">"code"</span>) </span>
+<span id="cb14-115"><a href="#cb14-115" aria-hidden="true" tabindex="-1"></a>      ) <span class="sc">|&gt;</span></span>
+<span id="cb14-116"><a href="#cb14-116" aria-hidden="true" tabindex="-1"></a>      <span class="fu">select</span>(<span class="sc">-</span>SCHL) <span class="sc">|&gt;</span></span>
+<span id="cb14-117"><a href="#cb14-117" aria-hidden="true" tabindex="-1"></a>      <span class="fu">rename</span>(<span class="at">SCHL =</span> range)</span>
+<span id="cb14-118"><a href="#cb14-118" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb14-119"><a href="#cb14-119" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb14-120"><a href="#cb14-120" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb14-121"><a href="#cb14-121" aria-hidden="true" tabindex="-1"></a>  <span class="co">#' Function for creating data assigns a class of census to resulting tibble</span></span>
+<span id="cb14-122"><a href="#cb14-122" aria-hidden="true" tabindex="-1"></a>  <span class="co">#' @noRd</span></span>
+<span id="cb14-123"><a href="#cb14-123" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb14-124"><a href="#cb14-124" aria-hidden="true" tabindex="-1"></a>  <span class="fu">class</span>(census_tib) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"census"</span>, <span class="fu">class</span>(census_tib))</span>
+<span id="cb14-125"><a href="#cb14-125" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb14-126"><a href="#cb14-126" aria-hidden="true" tabindex="-1"></a>  <span class="co">#' Ensure resulting tibble (census_tib) and selected variables are returned to the global environment for use in other functions and analysis</span></span>
+<span id="cb14-127"><a href="#cb14-127" aria-hidden="true" tabindex="-1"></a>  <span class="co">#' Superassigmment operator (&lt;&lt;-) is intentional to ensure local variables are passed to the global environment</span></span>
+<span id="cb14-128"><a href="#cb14-128" aria-hidden="true" tabindex="-1"></a>  <span class="co">#' A list including num_var, cat_var and census_tib is returned for redudancy and convenience so user assign function to an object and then specify the corresponding version of the variable created</span></span>
+<span id="cb14-129"><a href="#cb14-129" aria-hidden="true" tabindex="-1"></a>  <span class="co">#' @noRd</span></span>
+<span id="cb14-130"><a href="#cb14-130" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb14-131"><a href="#cb14-131" aria-hidden="true" tabindex="-1"></a>  num_var <span class="ot">&lt;&lt;-</span> num_var</span>
+<span id="cb14-132"><a href="#cb14-132" aria-hidden="true" tabindex="-1"></a>  cat_var <span class="ot">&lt;&lt;-</span> cat_var</span>
+<span id="cb14-133"><a href="#cb14-133" aria-hidden="true" tabindex="-1"></a>  census_tib <span class="ot">&lt;&lt;-</span> census_tib</span>
+<span id="cb14-134"><a href="#cb14-134" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb14-135"><a href="#cb14-135" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>The <code>api_query</code> function takes in the desired user variables and calls the census data api to take in those values. The variables are taken as columns, and then are sent to the <code>get_url</code> helper function. There are many cleaning techniques used to correctly concatenate the different variables as well as adding conditions and subsets. The numerical variables, categorical variables, and final tibble is returned as a list.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co">#' Begin query building</span></span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="co">#' Numeric variable PWGTP is required for function and always called so is not included as a default that can be overwritten</span></span>
@@ -575,40 +576,45 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb15-66"><a href="#cb15-66" aria-hidden="true" tabindex="-1"></a>  <span class="co">#clean up url</span></span>
 <span id="cb15-67"><a href="#cb15-67" aria-hidden="true" tabindex="-1"></a>  URL_id <span class="ot">&lt;-</span> <span class="fu">gsub</span>(<span class="st">"%2C"</span>, <span class="st">","</span>, <span class="fu">build_url</span>(parsed_url))</span>
 <span id="cb15-68"><a href="#cb15-68" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb15-69"><a href="#cb15-69" aria-hidden="true" tabindex="-1"></a>  <span class="fu">get_url</span>(URL_id)</span>
-<span id="cb15-70"><a href="#cb15-70" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb15-71"><a href="#cb15-71" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">list</span>(</span>
-<span id="cb15-72"><a href="#cb15-72" aria-hidden="true" tabindex="-1"></a>  <span class="at">num_var =</span> num_var,</span>
-<span id="cb15-73"><a href="#cb15-73" aria-hidden="true" tabindex="-1"></a>  <span class="at">cat_var =</span> cat_var,</span>
-<span id="cb15-74"><a href="#cb15-74" aria-hidden="true" tabindex="-1"></a>  <span class="at">census_tib =</span> census_tib</span>
-<span id="cb15-75"><a href="#cb15-75" aria-hidden="true" tabindex="-1"></a>  ))</span>
-<span id="cb15-76"><a href="#cb15-76" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb15-69"><a href="#cb15-69" aria-hidden="true" tabindex="-1"></a>  <span class="co">#call the helper function defined before!</span></span>
+<span id="cb15-70"><a href="#cb15-70" aria-hidden="true" tabindex="-1"></a>  <span class="fu">get_url</span>(URL_id)</span>
+<span id="cb15-71"><a href="#cb15-71" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb15-72"><a href="#cb15-72" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">list</span>(</span>
+<span id="cb15-73"><a href="#cb15-73" aria-hidden="true" tabindex="-1"></a>  <span class="at">num_var =</span> num_var,</span>
+<span id="cb15-74"><a href="#cb15-74" aria-hidden="true" tabindex="-1"></a>  <span class="at">cat_var =</span> cat_var,</span>
+<span id="cb15-75"><a href="#cb15-75" aria-hidden="true" tabindex="-1"></a>  <span class="at">census_tib =</span> census_tib</span>
+<span id="cb15-76"><a href="#cb15-76" aria-hidden="true" tabindex="-1"></a>  ))</span>
+<span id="cb15-77"><a href="#cb15-77" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="multi-year-api" class="level3">
 <h3 class="anchored" data-anchor-id="multi-year-api">Multi-Year API</h3>
 <p>This function takes the <code>api_query</code> function and allows the user, along with the previous defaults from that function, to select multiple years and return one large tibble that binds the multiple years by row.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>multi_api <span class="ot">&lt;-</span> <span class="cf">function</span>(surv_years, ...) {</span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  multi_tibs <span class="ot">&lt;-</span> <span class="fu">lapply</span>(surv_years, <span class="cf">function</span>(surv_year) {</span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>    tib_call <span class="ot">&lt;-</span> <span class="fu">api_query</span>(<span class="at">surv_year =</span> surv_year, ...)</span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    final_tib <span class="ot">&lt;-</span> tib_call<span class="sc">$</span>census_tib</span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>    final_tib <span class="ot">&lt;-</span> final_tib  <span class="sc">|&gt;</span> </span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mutate</span>(<span class="at">surv_year =</span> surv_year)</span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(final_tib)</span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>    })</span>
-<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>  entire_tib <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(multi_tibs)</span>
-<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(entire_tib)</span>
-<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co">#using ..., we can actually also call the api_query function along with specifying multiple surv_years</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>multi_api <span class="ot">&lt;-</span> <span class="cf">function</span>(surv_years, ...) {</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  multi_tibs <span class="ot">&lt;-</span> <span class="fu">lapply</span>(surv_years, <span class="cf">function</span>(surv_year) {</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">#calls api_query</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>    tib_call <span class="ot">&lt;-</span> <span class="fu">api_query</span>(<span class="at">surv_year =</span> surv_year, ...)</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>    final_tib <span class="ot">&lt;-</span> tib_call<span class="sc">$</span>census_tib</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>    final_tib <span class="ot">&lt;-</span> final_tib  <span class="sc">|&gt;</span> </span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>    <span class="co">#allows us to concatenate the correct surv_year </span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mutate</span>(<span class="at">surv_year =</span> surv_year)</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(final_tib)</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>    })</span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>  entire_tib <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(multi_tibs)</span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>  <span class="co">#the tibble with all years rowbinded</span></span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(entire_tib)</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="test-the-api-function" class="level3">
 <h3 class="anchored" data-anchor-id="test-the-api-function">Test the API Function</h3>
-<p>Ensure the <code>api_query</code> function is working properly by feeding in some numeric, date, and categorical variables.</p>
+<p>Ensure the <code>api_query</code> function is working properly by feeding in some numeric, date, and categorical variables. Furthermore, let’s condition on <code>ALL</code>, with <code>AGEP=30</code> and subsetting the appropriate state.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">api_query</span>(<span class="dv">2016</span>, <span class="at">num_var =</span> <span class="fu">c</span>(<span class="st">"GASP"</span>, <span class="st">"GRPIP"</span>, <span class="st">"JWAP"</span>), <span class="st">"FER"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">api_query</span>(<span class="at">surv_year =</span> <span class="st">"2022"</span>, <span class="at">num_var =</span><span class="fu">c</span>(<span class="st">"AGEP"</span>,<span class="st">"PWGTP"</span>), <span class="at">cat_var =</span> <span class="fu">c</span>(<span class="st">"HISPEED"</span>, <span class="st">"SCHL"</span>, <span class="st">"SCH"</span>, <span class="st">"FER"</span>, <span class="st">"SEX"</span>, <span class="st">"SEX"</span>), <span class="at">geo_level =</span> <span class="st">"ALL"</span>, <span class="at">condition =</span> <span class="st">"AGEP=30"</span>, <span class="at">geo_subset =</span> <span class="st">"STATE:11"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] "https://api.census.gov/data/2016/acs/acs1/pums?get=PWGTP,GASP,GRPIP,JWAP,FER,&amp;for=STATE:11"</code></pre>
+<pre><code>[1] "https://api.census.gov/data/2022/acs/acs1/pums?get=PWGTP,AGEP,PWGTP,HISPEED,SCHL,SCH,FER,SEX,&amp;AGEP=30&amp;for=STATE:11"</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: The `x` argument of `as_tibble.matrix()` must have unique column names if
@@ -617,52 +623,57 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div class="cell-output cell-output-stdout">
 <pre><code>$num_var
-[1] "GASP"  "GRPIP" "JWAP" 
+[1] "AGEP"  "PWGTP"
 
 $cat_var
-[1] "FER"
+[1] "HISPEED" "SCHL"    "SCH"     "FER"     "SEX"     "SEX"    
 
 $census_tib
-# A tibble: 6,646 × 6
-   PWGTP  GASP GRPIP state JWAP   FER                                           
-   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt; &lt;time&gt; &lt;chr&gt;                                         
- 1   230     3    60 11    08:17  No                                            
- 2   105    30     0 11    24:47  N/A (less than 15 years/greater than 50 years…
- 3   119    30     0 11    09:17  No                                            
- 4   163    80   101 11       NA  N/A (less than 15 years/greater than 50 years…
- 5   132     1     0 11    06:22  N/A (less than 15 years/greater than 50 years…
- 6    99     0     0 11       NA  N/A (less than 15 years/greater than 50 years…
- 7    34     0     0 11       NA  N/A (less than 15 years/greater than 50 years…
- 8   123   140     0 11       NA  N/A (less than 15 years/greater than 50 years…
- 9   190   140     0 11    09:02  N/A (less than 15 years/greater than 50 years…
-10    28   380     0 11       NA  N/A (less than 15 years/greater than 50 years…
-# ℹ 6,636 more rows</code></pre>
+# A tibble: 156 × 8
+   PWGTP  AGEP state SEX    FER                              HISPEED SCH   SCHL 
+   &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;  &lt;chr&gt;                            &lt;chr&gt;   &lt;chr&gt; &lt;chr&gt;
+ 1   117    30 11    Female No                               Yes     No, … Bach…
+ 2   214    30 11    Male   N/A (less than 15 years/greater… No      No, … Doct…
+ 3   105    30 11    Male   N/A (less than 15 years/greater… Yes     No, … Mast…
+ 4   151    30 11    Female No                               No      No, … 1 or…
+ 5    28    30 11    Female No                               Yes     No, … Mast…
+ 6    82    30 11    Male   N/A (less than 15 years/greater… Yes     Yes,… Mast…
+ 7   304    30 11    Female No                               Yes     No, … Regu…
+ 8    26    30 11    Female No                               Yes     No, … 12th…
+ 9    44    30 11    Male   N/A (less than 15 years/greater… N/A (G… No, … Bach…
+10    51    30 11    Female No                               Yes     No, … Mast…
+# ℹ 146 more rows</code></pre>
 </div>
 </div>
+<p>Voila! Notice that we output our respective link, the numerical and categorical variables, and the final tibble. Also, any duplicate columns called through user error are removed!</p>
+</section>
+<section id="test-the-multi-api-function" class="level3">
+<h3 class="anchored" data-anchor-id="test-the-multi-api-function">Test the Multi-API Function</h3>
 <p>Ensure the <code>multi_api</code> function is working properly by combining years and feeding in some numeric, date, and categorical variables.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">multi_api</span>(<span class="at">surv_years =</span> <span class="fu">c</span>(<span class="st">"2015"</span>, <span class="st">"2021"</span>), <span class="at">num_var =</span> <span class="fu">c</span>(<span class="st">"JWDP"</span>,<span class="st">"GRPIP"</span>,<span class="st">"GRPIP"</span>), <span class="at">cat_var =</span> <span class="fu">c</span>(<span class="st">"FER"</span>, <span class="st">"HHL"</span>), <span class="at">condition=</span><span class="st">"AGEP=30"</span>, <span class="at">geo_subset=</span> <span class="st">"STATE:19"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">multi_api</span>(<span class="at">surv_years =</span> <span class="fu">c</span>(<span class="st">"2015"</span>, <span class="st">"2021"</span>), <span class="at">num_var =</span> <span class="fu">c</span>(<span class="st">"JWDP"</span>,<span class="st">"GRPIP"</span>,<span class="st">"GRPIP"</span>), <span class="at">cat_var =</span> <span class="fu">c</span>(<span class="st">"FER"</span>, <span class="st">"HHL"</span>, <span class="st">"SEX"</span>), <span class="at">condition=</span><span class="st">"SEX=1"</span>, <span class="at">geo_subset=</span> <span class="st">"STATE:11"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] "https://api.census.gov/data/2015/acs/acs1/pums?get=PWGTP,JWDP,GRPIP,FER,HHL,&amp;AGEP=30&amp;for=STATE:19"
-[1] "https://api.census.gov/data/2021/acs/acs1/pums?get=PWGTP,JWDP,GRPIP,FER,HHL,&amp;AGEP=30&amp;for=STATE:19"</code></pre>
+<pre><code>[1] "https://api.census.gov/data/2015/acs/acs1/pums?get=PWGTP,JWDP,GRPIP,FER,HHL,SEX,&amp;SEX=1&amp;for=STATE:11"
+[1] "https://api.census.gov/data/2021/acs/acs1/pums?get=PWGTP,JWDP,GRPIP,FER,HHL,SEX,&amp;SEX=1&amp;for=STATE:11"</code></pre>
 </div>
 <div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 723 × 8
-   PWGTP GRPIP  AGEP state JWDP   FER                            HHL   surv_year
-   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt; &lt;time&gt; &lt;chr&gt;                          &lt;chr&gt; &lt;chr&gt;    
- 1    35     0    30 19    04:17  N/A (less than 15 years/great… Engl… 2015     
- 2    51     0    30 19    04:17  No                             Engl… 2015     
- 3    57     0    30 19    11:22  No                             Engl… 2015     
- 4    82     0    30 19       NA  No                             Engl… 2015     
- 5   220     0    30 19    04:37  No                             Engl… 2015     
- 6    52    11    30 19    09:47  No                             Engl… 2015     
- 7    75    76    30 19    03:17  Yes                            Engl… 2015     
- 8    96     0    30 19    03:52  No                             Engl… 2015     
- 9    59     0    30 19    03:32  N/A (less than 15 years/great… Engl… 2015     
-10   174     0    30 19    01:42  N/A (less than 15 years/great… Engl… 2015     
-# ℹ 713 more rows</code></pre>
+<pre><code># A tibble: 6,424 × 8
+   PWGTP GRPIP state JWDP   SEX   FER                            HHL   surv_year
+   &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt; &lt;time&gt; &lt;chr&gt; &lt;chr&gt;                          &lt;chr&gt; &lt;chr&gt;    
+ 1   167    25 11    04:02  Male  N/A (less than 15 years/great… Engl… 2015     
+ 2    58     0 11       NA  Male  N/A (less than 15 years/great… Span… 2015     
+ 3    41     0 11       NA  Male  N/A (less than 15 years/great… Span… 2015     
+ 4   265    19 11    02:47  Male  N/A (less than 15 years/great… Span… 2015     
+ 5   292    19 11    02:47  Male  N/A (less than 15 years/great… Span… 2015     
+ 6   207    19 11    02:47  Male  N/A (less than 15 years/great… Span… 2015     
+ 7    75     0 11    03:32  Male  N/A (less than 15 years/great… Engl… 2015     
+ 8    37    38 11    04:32  Male  N/A (less than 15 years/great… Engl… 2015     
+ 9    61     0 11       NA  Male  N/A (less than 15 years/great… N/A … 2015     
+10   161     0 11    09:17  Male  N/A (less than 15 years/great… Engl… 2015     
+# ℹ 6,414 more rows</code></pre>
 </div>
 </div>
+<p>Voila! Notice that we output our respective link, the numerical and categorical variables, and the final tibble. Also, any duplicate columns called through user error are removed! Furthermore, we wanted to show that we can condition on categorical variables, and our tibble correctly rowbinds.</p>
 <p>Finally, test the empty function call (i.e., test the default query) to reflect assigned `state` of 11 (i.e., DC). This is the tibble to be used in creating summaries below.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co">#this should be last call to api_query, which establishes defaults for summary functions</span></span>
@@ -682,16 +693,16 @@ $census_tib
 # A tibble: 6,718 × 4
    PWGTP  AGEP state SEX   
    &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt; 
- 1    81    18 11    Female
- 2    67    18 11    Female
- 3    85    19 11    Male  
- 4    51    18 11    Male  
- 5    56    23 11    Female
- 6    80    20 11    Male  
- 7   213    34 11    Female
- 8   175    66 11    Male  
- 9    84    24 11    Male  
-10    62    19 11    Female
+ 1    46    85 11    Female
+ 2    79    50 11    Female
+ 3   114     0 11    Male  
+ 4    56    61 11    Male  
+ 5   150    60 11    Female
+ 6   230    29 11    Male  
+ 7   214    39 11    Female
+ 8   161    18 11    Male  
+ 9   264    16 11    Male  
+10   226    13 11    Female
 # ℹ 6,708 more rows</code></pre>
 </div>
 </div>
@@ -802,57 +813,232 @@ $all_counts$SEX
 2 Male    3135</code></pre>
 </div>
 </div>
+<p>If you are interested in a more complex census summary, we can use our <code>multi_api</code> function from earlier. It will still be compatible:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">multi_api</span>(<span class="at">surv_years =</span> <span class="fu">c</span>(<span class="st">"2015"</span>, <span class="st">"2021"</span>), <span class="at">num_var =</span> <span class="fu">c</span>(<span class="st">"JWDP"</span>,<span class="st">"GRPIP"</span>,<span class="st">"GRPIP"</span>), <span class="at">cat_var =</span> <span class="fu">c</span>(<span class="st">"FER"</span>, <span class="st">"HHL"</span>, <span class="st">"SEX"</span>), <span class="at">condition=</span><span class="st">"SEX=1"</span>, <span class="at">geo_subset=</span> <span class="st">"STATE:11"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "https://api.census.gov/data/2015/acs/acs1/pums?get=PWGTP,JWDP,GRPIP,FER,HHL,SEX,&amp;SEX=1&amp;for=STATE:11"
+[1] "https://api.census.gov/data/2021/acs/acs1/pums?get=PWGTP,JWDP,GRPIP,FER,HHL,SEX,&amp;SEX=1&amp;for=STATE:11"</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6,424 × 8
+   PWGTP GRPIP state JWDP   SEX   FER                            HHL   surv_year
+   &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt; &lt;time&gt; &lt;chr&gt; &lt;chr&gt;                          &lt;chr&gt; &lt;chr&gt;    
+ 1   167    25 11    04:02  Male  N/A (less than 15 years/great… Engl… 2015     
+ 2    58     0 11       NA  Male  N/A (less than 15 years/great… Span… 2015     
+ 3    41     0 11       NA  Male  N/A (less than 15 years/great… Span… 2015     
+ 4   265    19 11    02:47  Male  N/A (less than 15 years/great… Span… 2015     
+ 5   292    19 11    02:47  Male  N/A (less than 15 years/great… Span… 2015     
+ 6   207    19 11    02:47  Male  N/A (less than 15 years/great… Span… 2015     
+ 7    75     0 11    03:32  Male  N/A (less than 15 years/great… Engl… 2015     
+ 8    37    38 11    04:32  Male  N/A (less than 15 years/great… Engl… 2015     
+ 9    61     0 11       NA  Male  N/A (less than 15 years/great… N/A … 2015     
+10   161     0 11    09:17  Male  N/A (less than 15 years/great… Engl… 2015     
+# ℹ 6,414 more rows</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">census_summary</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$sample_means
+$sample_means$GRPIP
+[1] 16.80561
+
+$sample_means$JWDP
+05:02:38
+
+
+$sample_sds
+$sample_sds$GRPIP
+[1] 26.64306
+
+$sample_sds$JWDP
+02:22:48
+
+
+$all_counts
+$all_counts$SEX
+# A tibble: 1 × 2
+  SEX   count
+  &lt;chr&gt; &lt;int&gt;
+1 Male    964
+
+$all_counts$FER
+# A tibble: 1 × 2
+  FER                                                  count
+  &lt;chr&gt;                                                &lt;int&gt;
+1 N/A (less than 15 years/greater than 50 years/ male)   964
+
+$all_counts$HHL
+# A tibble: 6 × 2
+  HHL                                count
+  &lt;chr&gt;                              &lt;int&gt;
+1 Asian and Pacific Island languages    12
+2 English Only                         659
+3 N/A (GQ/vacant)                       61
+4 Other Indo-European languages         70
+5 Other Language                        44
+6 Spanish                              118</code></pre>
+</div>
+</div>
+<p>Notice that we output a named list for the means and standard deviations of the called variables, where duplicates are ignored. Furthermore, we created a function that outputs all count data for each categorical variable. It also works on time! I set it back to the default query as well.</p>
+<p>Setting it back to the default query for the next steps,</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>default_query <span class="ot">&lt;-</span> <span class="fu">api_query</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "https://api.census.gov/data/2022/acs/acs1/pums?get=PWGTP,AGEP,PWGTP,SEX,&amp;for=STATE:11"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>default_query</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$num_var
+[1] "AGEP"  "PWGTP"
+
+$cat_var
+[1] "SEX"
+
+$census_tib
+# A tibble: 6,718 × 4
+   PWGTP  AGEP state SEX   
+   &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt; 
+ 1    68    34 11    Female
+ 2    52    33 11    Female
+ 3    44    32 11    Male  
+ 4    53     0 11    Female
+ 5    49    23 11    Female
+ 6    35    25 11    Male  
+ 7    33    24 11    Female
+ 8    75    58 11    Male  
+ 9    81    66 11    Female
+10    48    94 11    Male  
+# ℹ 6,708 more rows</code></pre>
+</div>
+</div>
 </section>
 <section id="graphical-summary" class="level3">
 <h3 class="anchored" data-anchor-id="graphical-summary">Graphical Summary</h3>
 <p>Create a generic <code>plot()</code> function for a census class tibble. Require the user to specify one categorical variable and one numeric variable for plotting purposes.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>census_plot <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">tib =</span> census_tib, cat_var_s, num_var_s) {</span>
-<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a><span class="co">#' function generates a boxplot based upon one numeric and one categorical variable from api_query call</span></span>
-<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a><span class="co">#' defaults most recent tibble returned from api_query</span></span>
-<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a><span class="co">#' @noRd</span></span>
-<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(name <span class="cf">in</span> num_var_s) {</span>
-<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span>(name <span class="sc">%in%</span> <span class="fu">colnames</span>(tib) <span class="sc">&amp;</span></span>
-<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a>       name <span class="sc">%in%</span> valid_num_var <span class="sc">&amp;</span></span>
-<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a>       name <span class="sc">!=</span> <span class="st">"PWGTP"</span>) {</span>
-<span id="cb33-12"><a href="#cb33-12" aria-hidden="true" tabindex="-1"></a>      y <span class="ot">&lt;-</span> tib[[name]]</span>
-<span id="cb33-13"><a href="#cb33-13" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
-<span id="cb33-14"><a href="#cb33-14" aria-hidden="true" tabindex="-1"></a>        <span class="fu">stop</span>(<span class="st">"Please enter numeric variables used in API call"</span>)</span>
-<span id="cb33-15"><a href="#cb33-15" aria-hidden="true" tabindex="-1"></a>      }</span>
-<span id="cb33-16"><a href="#cb33-16" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb33-17"><a href="#cb33-17" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb33-18"><a href="#cb33-18" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(name <span class="cf">in</span> cat_var_s) {</span>
-<span id="cb33-19"><a href="#cb33-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span>(name <span class="sc">%in%</span> <span class="fu">colnames</span>(tib) <span class="sc">&amp;</span></span>
-<span id="cb33-20"><a href="#cb33-20" aria-hidden="true" tabindex="-1"></a>       name <span class="sc">%in%</span> valid_cat_var) {</span>
-<span id="cb33-21"><a href="#cb33-21" aria-hidden="true" tabindex="-1"></a>      x <span class="ot">&lt;-</span> tib[[name]]</span>
-<span id="cb33-22"><a href="#cb33-22" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
-<span id="cb33-23"><a href="#cb33-23" aria-hidden="true" tabindex="-1"></a>        <span class="fu">stop</span>(<span class="st">"Please enter categorical variables used in API call"</span>)</span>
-<span id="cb33-24"><a href="#cb33-24" aria-hidden="true" tabindex="-1"></a>      }</span>
-<span id="cb33-25"><a href="#cb33-25" aria-hidden="true" tabindex="-1"></a>  } </span>
-<span id="cb33-26"><a href="#cb33-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb33-27"><a href="#cb33-27" aria-hidden="true" tabindex="-1"></a>  <span class="co">#boxplot calls x and y variables from for loops above  </span></span>
-<span id="cb33-28"><a href="#cb33-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(tib,</span>
-<span id="cb33-29"><a href="#cb33-29" aria-hidden="true" tabindex="-1"></a>       <span class="fu">aes</span>(<span class="at">x =</span> x, <span class="at">y =</span> y, <span class="at">weight =</span> PWGTP)) <span class="sc">+</span></span>
-<span id="cb33-30"><a href="#cb33-30" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_boxplot</span>() <span class="sc">+</span></span>
-<span id="cb33-31"><a href="#cb33-31" aria-hidden="true" tabindex="-1"></a>    <span class="fu">xlab</span>(cat_var_s) <span class="sc">+</span></span>
-<span id="cb33-32"><a href="#cb33-32" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ylab</span>(num_var_s)</span>
-<span id="cb33-33"><a href="#cb33-33" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>census_plot <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">tib =</span> census_tib, cat_var_s, num_var_s) {</span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a><span class="co">#' function generates a boxplot based upon one numeric and one categorical variable from api_query call</span></span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a><span class="co">#' defaults most recent tibble returned from api_query</span></span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a><span class="co">#' @noRd</span></span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(name <span class="cf">in</span> num_var_s) {</span>
+<span id="cb42-9"><a href="#cb42-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span>(name <span class="sc">%in%</span> <span class="fu">colnames</span>(tib) <span class="sc">&amp;</span></span>
+<span id="cb42-10"><a href="#cb42-10" aria-hidden="true" tabindex="-1"></a>       name <span class="sc">%in%</span> valid_num_var <span class="sc">&amp;</span></span>
+<span id="cb42-11"><a href="#cb42-11" aria-hidden="true" tabindex="-1"></a>       name <span class="sc">!=</span> <span class="st">"PWGTP"</span>) {</span>
+<span id="cb42-12"><a href="#cb42-12" aria-hidden="true" tabindex="-1"></a>      y <span class="ot">&lt;-</span> tib[[name]]</span>
+<span id="cb42-13"><a href="#cb42-13" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb42-14"><a href="#cb42-14" aria-hidden="true" tabindex="-1"></a>        <span class="fu">stop</span>(<span class="st">"Please enter numeric variables used in API call"</span>)</span>
+<span id="cb42-15"><a href="#cb42-15" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb42-16"><a href="#cb42-16" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb42-17"><a href="#cb42-17" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb42-18"><a href="#cb42-18" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(name <span class="cf">in</span> cat_var_s) {</span>
+<span id="cb42-19"><a href="#cb42-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span>(name <span class="sc">%in%</span> <span class="fu">colnames</span>(tib) <span class="sc">&amp;</span></span>
+<span id="cb42-20"><a href="#cb42-20" aria-hidden="true" tabindex="-1"></a>       name <span class="sc">%in%</span> valid_cat_var) {</span>
+<span id="cb42-21"><a href="#cb42-21" aria-hidden="true" tabindex="-1"></a>      x <span class="ot">&lt;-</span> tib[[name]]</span>
+<span id="cb42-22"><a href="#cb42-22" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb42-23"><a href="#cb42-23" aria-hidden="true" tabindex="-1"></a>        <span class="fu">stop</span>(<span class="st">"Please enter categorical variables used in API call"</span>)</span>
+<span id="cb42-24"><a href="#cb42-24" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb42-25"><a href="#cb42-25" aria-hidden="true" tabindex="-1"></a>  } </span>
+<span id="cb42-26"><a href="#cb42-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-27"><a href="#cb42-27" aria-hidden="true" tabindex="-1"></a>  <span class="co">#boxplot calls x and y variables from for loops above  </span></span>
+<span id="cb42-28"><a href="#cb42-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(tib,</span>
+<span id="cb42-29"><a href="#cb42-29" aria-hidden="true" tabindex="-1"></a>       <span class="fu">aes</span>(<span class="at">x =</span> x, <span class="at">y =</span> y, <span class="at">weight =</span> PWGTP)) <span class="sc">+</span></span>
+<span id="cb42-30"><a href="#cb42-30" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_boxplot</span>() <span class="sc">+</span></span>
+<span id="cb42-31"><a href="#cb42-31" aria-hidden="true" tabindex="-1"></a>    <span class="fu">xlab</span>(cat_var_s) <span class="sc">+</span></span>
+<span id="cb42-32"><a href="#cb42-32" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ylab</span>(num_var_s)</span>
+<span id="cb42-33"><a href="#cb42-33" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Test the `census_plot` function on <code>SEX</code> and <code>AGEP</code> variables per the default <code>api_query</code>.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">census_plot</span>(<span class="at">cat_var_s =</span> <span class="st">"SEX"</span>, <span class="at">num_var_s =</span> <span class="st">"AGEP"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="fu">census_plot</span>(<span class="at">cat_var_s =</span> <span class="st">"SEX"</span>, <span class="at">num_var_s =</span> <span class="st">"AGEP"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="project_1_558_files/figure-html/unnamed-chunk-21-1.png" class="img-fluid figure-img" width="672"></p>
-</figure>
-</div>
+<p><img src="project_1_558_files/figure-html/unnamed-chunk-23-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
 </section>
+</section>
+<section id="investigative-task" class="level2">
+<h2 class="anchored" data-anchor-id="investigative-task">Investigative Task</h2>
+<p>We wanted to investigate if <code>JWDP</code> (time departure for work), <code>JWAP</code> (time arrival at work), and <code>JWMNP</code> (travel time to work) were different (on average) between <code>SEX</code> (male and female) given <code>STATE</code> = 11 for the year 2021. In particular, 2021 was in the midst of COVID and a lot of interesting trends emerged. Whilst more complicated statistical measures would be required to find the true answer, we will just observe final boxplots!</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="co">#query the api with the desired year and numerical and categorical variables</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a><span class="fu">api_query</span>(<span class="at">surv_year =</span> <span class="fu">c</span>(<span class="st">"2021"</span>), <span class="at">num_var =</span> <span class="fu">c</span>(<span class="st">"JWDP"</span>,<span class="st">"JWAP"</span>,<span class="st">"JWMNP"</span>), <span class="at">cat_var =</span> (<span class="st">"SEX"</span>), <span class="at">condition=</span><span class="cn">NULL</span>, <span class="at">geo_subset=</span> <span class="st">"STATE:11"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "https://api.census.gov/data/2021/acs/acs1/pums?get=PWGTP,JWDP,JWAP,JWMNP,SEX,&amp;for=STATE:11"</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$num_var
+[1] "JWDP"  "JWAP"  "JWMNP"
+
+$cat_var
+[1] "SEX"
+
+$census_tib
+# A tibble: 7,162 × 6
+   PWGTP JWMNP state JWAP   JWDP   SEX   
+   &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt; &lt;time&gt; &lt;time&gt; &lt;chr&gt; 
+ 1    55     0 11       NA     NA  Male  
+ 2   156     0 11       NA     NA  Male  
+ 3     6     0 11       NA     NA  Female
+ 4    28     0 11       NA     NA  Female
+ 5    27     0 11       NA     NA  Male  
+ 6    69     0 11       NA     NA  Female
+ 7    68     0 11       NA     NA  Male  
+ 8    31     0 11       NA     NA  Male  
+ 9    83     0 11       NA     NA  Male  
+10     5     0 11       NA     NA  Female
+# ℹ 7,152 more rows</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="co">#summary function takes defaults</span></span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a><span class="fu">census_summary</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$sample_means
+$sample_means$JWMNP
+[1] 7.742825
+
+$sample_means$JWAP
+09:21:33
+
+$sample_means$JWDP
+05:05:36
+
+
+$sample_sds
+$sample_sds$JWMNP
+[1] 16.4837
+
+$sample_sds$JWAP
+03:46:34
+
+$sample_sds$JWDP
+02:16:08
+
+
+$all_counts
+$all_counts$SEX
+# A tibble: 2 × 2
+  SEX    count
+  &lt;chr&gt;  &lt;int&gt;
+1 Female   985
+2 Male     964</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="co">#run plot function with 3 different numerical variables for 3 boxplots</span></span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a><span class="fu">census_plot</span>(census_tib, <span class="at">num_var_s =</span> <span class="fu">c</span>(<span class="st">"JWDP"</span>), <span class="at">cat_var_s =</span> <span class="st">"SEX"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="project_1_558_files/figure-html/unnamed-chunk-24-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="fu">census_plot</span>(census_tib, <span class="at">num_var_s =</span> <span class="fu">c</span>(<span class="st">"JWAP"</span>), <span class="at">cat_var_s =</span> <span class="st">"SEX"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="project_1_558_files/figure-html/unnamed-chunk-24-2.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="fu">census_plot</span>(census_tib, <span class="at">num_var_s =</span> <span class="fu">c</span>(<span class="st">"JWMNP"</span>), <span class="at">cat_var_s =</span> <span class="st">"SEX"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="project_1_558_files/figure-html/unnamed-chunk-24-3.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Based on the boxplots alone, we see a very slight difference in females vs males in <code>JWAP</code>, where females on average appear to arrive at work slightly later than men. In <code>JWMNP</code> , we notice that females are largely more concentrated around shorter travel times to work, whereas men may take longer to travel to work on average. Notice the indecisive language, we would have to do more robust statistical testing to find out if there were actually significant differences between groups!</p>
 </section>
 <section id="project-conclusion" class="level2">
 <h2 class="anchored" data-anchor-id="project-conclusion">Project Conclusion</h2>
@@ -897,7 +1083,18 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }
     return false;
   }
-  const onCopySuccess = function(e) {
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
     // button target
     const button = e.trigger;
     // don't keep focus
@@ -929,50 +1126,11 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }, 1000);
     // clear code selection
     e.clearSelection();
-  }
-  const getTextToCopy = function(trigger) {
-      const codeEl = trigger.previousElementSibling.cloneNode(true);
-      for (const childEl of codeEl.children) {
-        if (isCodeAnnotation(childEl)) {
-          childEl.remove();
-        }
-      }
-      return codeEl.innerText;
-  }
-  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
-    text: getTextToCopy
   });
-  clipboard.on('success', onCopySuccess);
-  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
-    // For code content inside modals, clipBoardJS needs to be initialized with a container option
-    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
-    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
-      text: getTextToCopy,
-      container: window.document.getElementById('quarto-embedded-source-code-modal')
-    });
-    clipboardModal.on('success', onCopySuccess);
-  }
-    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
-    var mailtoRegex = new RegExp(/^mailto:/);
-      var filterRegex = new RegExp('/' + window.location.host + '/');
-    var isInternal = (href) => {
-        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
-    }
-    // Inspect non-navigation links and adorn them if external
- 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
-    for (var i=0; i<links.length; i++) {
-      const link = links[i];
-      if (!isInternal(link.href)) {
-        // undo the damage that might have been done by quarto-nav.js in the case of
-        // links that we want to consider external
-        if (link.dataset.originalHref !== undefined) {
-          link.href = link.dataset.originalHref;
-        }
-      }
-    }
-  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+  function tippyHover(el, contentFn) {
     const config = {
       allowHTML: true,
+      content: contentFn,
       maxWidth: 500,
       delay: 100,
       arrow: false,
@@ -982,17 +1140,8 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       interactive: true,
       interactiveBorder: 10,
       theme: 'quarto',
-      placement: 'bottom-start',
+      placement: 'bottom-start'
     };
-    if (contentFn) {
-      config.content = contentFn;
-    }
-    if (onTriggerFn) {
-      config.onTrigger = onTriggerFn;
-    }
-    if (onUntriggerFn) {
-      config.onUntrigger = onUntriggerFn;
-    }
     window.tippy(el, config); 
   }
   const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
@@ -1004,130 +1153,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       try { href = new URL(href).hash; } catch {}
       const id = href.replace(/^#\/?/, "");
       const note = window.document.getElementById(id);
-      if (note) {
-        return note.innerHTML;
-      } else {
-        return "";
-      }
-    });
-  }
-  const xrefs = window.document.querySelectorAll('a.quarto-xref');
-  const processXRef = (id, note) => {
-    // Strip column container classes
-    const stripColumnClz = (el) => {
-      el.classList.remove("page-full", "page-columns");
-      if (el.children) {
-        for (const child of el.children) {
-          stripColumnClz(child);
-        }
-      }
-    }
-    stripColumnClz(note)
-    if (id === null || id.startsWith('sec-')) {
-      // Special case sections, only their first couple elements
-      const container = document.createElement("div");
-      if (note.children && note.children.length > 2) {
-        container.appendChild(note.children[0].cloneNode(true));
-        for (let i = 1; i < note.children.length; i++) {
-          const child = note.children[i];
-          if (child.tagName === "P" && child.innerText === "") {
-            continue;
-          } else {
-            container.appendChild(child.cloneNode(true));
-            break;
-          }
-        }
-        if (window.Quarto?.typesetMath) {
-          window.Quarto.typesetMath(container);
-        }
-        return container.innerHTML
-      } else {
-        if (window.Quarto?.typesetMath) {
-          window.Quarto.typesetMath(note);
-        }
-        return note.innerHTML;
-      }
-    } else {
-      // Remove any anchor links if they are present
-      const anchorLink = note.querySelector('a.anchorjs-link');
-      if (anchorLink) {
-        anchorLink.remove();
-      }
-      if (window.Quarto?.typesetMath) {
-        window.Quarto.typesetMath(note);
-      }
-      // TODO in 1.5, we should make sure this works without a callout special case
-      if (note.classList.contains("callout")) {
-        return note.outerHTML;
-      } else {
-        return note.innerHTML;
-      }
-    }
-  }
-  for (var i=0; i<xrefs.length; i++) {
-    const xref = xrefs[i];
-    tippyHover(xref, undefined, function(instance) {
-      instance.disable();
-      let url = xref.getAttribute('href');
-      let hash = undefined; 
-      if (url.startsWith('#')) {
-        hash = url;
-      } else {
-        try { hash = new URL(url).hash; } catch {}
-      }
-      if (hash) {
-        const id = hash.replace(/^#\/?/, "");
-        const note = window.document.getElementById(id);
-        if (note !== null) {
-          try {
-            const html = processXRef(id, note.cloneNode(true));
-            instance.setContent(html);
-          } finally {
-            instance.enable();
-            instance.show();
-          }
-        } else {
-          // See if we can fetch this
-          fetch(url.split('#')[0])
-          .then(res => res.text())
-          .then(html => {
-            const parser = new DOMParser();
-            const htmlDoc = parser.parseFromString(html, "text/html");
-            const note = htmlDoc.getElementById(id);
-            if (note !== null) {
-              const html = processXRef(id, note);
-              instance.setContent(html);
-            } 
-          }).finally(() => {
-            instance.enable();
-            instance.show();
-          });
-        }
-      } else {
-        // See if we can fetch a full url (with no hash to target)
-        // This is a special case and we should probably do some content thinning / targeting
-        fetch(url)
-        .then(res => res.text())
-        .then(html => {
-          const parser = new DOMParser();
-          const htmlDoc = parser.parseFromString(html, "text/html");
-          const note = htmlDoc.querySelector('main.content');
-          if (note !== null) {
-            // This should only happen for chapter cross references
-            // (since there is no id in the URL)
-            // remove the first header
-            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
-              note.children[0].remove();
-            }
-            const html = processXRef(null, note);
-            instance.setContent(html);
-          } 
-        }).finally(() => {
-          instance.enable();
-          instance.show();
-        });
-      }
-    }, function(instance) {
+      return note.innerHTML;
     });
   }
       let selectedAnnoteEl;
@@ -1171,7 +1197,6 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
             }
             div.style.top = top - 2 + "px";
             div.style.height = height + 4 + "px";
-            div.style.left = 0;
             let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
             if (gutterDiv === null) {
               gutterDiv = window.document.createElement("div");
@@ -1197,32 +1222,6 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
         });
         selectedAnnoteEl = undefined;
       };
-        // Handle positioning of the toggle
-    window.addEventListener(
-      "resize",
-      throttle(() => {
-        elRect = undefined;
-        if (selectedAnnoteEl) {
-          selectCodeLines(selectedAnnoteEl);
-        }
-      }, 10)
-    );
-    function throttle(fn, ms) {
-    let throttle = false;
-    let timer;
-      return (...args) => {
-        if(!throttle) { // first call gets through
-            fn.apply(this, args);
-            throttle = true;
-        } else { // all the others get throttled
-            if(timer) clearTimeout(timer); // cancel #2
-            timer = setTimeout(() => {
-              fn.apply(this, args);
-              timer = throttle = false;
-            }, ms);
-        }
-      };
-    }
       // Attach click handler to the DT
       const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
       for (const annoteDlNode of annoteDls) {
@@ -1283,7 +1282,6 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 });
 </script>
 </div> <!-- /content -->
-
 
 
 

@@ -110,12 +110,11 @@ jwdp_time_table$code <- as.numeric(jwdp_time_table$code)
 jwdp_time_table
 ```
 
-###Prepare Factor Levels
+### Prepare Factor Levels
 
-For categorical variables, call variable descriptions to retrieve factor levels and labels.
+For categorical variables, call variable descriptions to retrieve factor levels and labels. Then, with similar logic to the time variables, make sure that the corresponding factors are in the correct places. Furthermore, make sure the logic is cohesive and able to be called by the API.
 
 ```{r}
-
 URL_SCHL <- "https://api.census.gov/data/2022/acs/acs1/pums/variables/SCHL.json"
 SCHL_vars <- GET(URL_SCHL)
 
@@ -230,7 +229,7 @@ valid_cat_var <- c("FER", "HHL", "HISPEED", "JWTRNS", "SCH", "SCHL", "SEX")
 valid_geo_level <- c("ALL", "REGION", "DIVISION", "STATE")
 ```
 
-Then, a helper function is created:
+Then, a helper function is created. Note that the helper function both takes in the URL with `GET` and also creates a tibble. The tibble is then formatted, wrangled, and massaged to be nice and neat. The tibble deletes duplicate columns and uses all the ranges assigned before to correctly display the categorical factors.
 
 ```{r}
 get_url <- function(URL_id) {
@@ -274,7 +273,8 @@ get_url <- function(URL_id) {
       rename(JWDP = median_time)
     }
   
-   if (str_detect(URL_id, "SEX")) {
+  #format the sex based on above designated factor level
+  if (str_detect(URL_id, "SEX")) {
     census_tib <- census_tib |>
       left_join(
         SEX_codes,
@@ -284,7 +284,8 @@ get_url <- function(URL_id) {
       rename(SEX = range)
   }
   
-   if (str_detect(URL_id, "FER")) {
+  #format the fer based on above designated factor level
+  if (str_detect(URL_id, "FER")) {
     census_tib <- census_tib |>
       left_join(
         FER_codes,
@@ -294,6 +295,7 @@ get_url <- function(URL_id) {
       rename(FER = range)
   }
 
+  #format the HISPEED based on above designated factor level
   if (str_detect(URL_id, "HISPEED")) {
     census_tib <- census_tib |>
       left_join(
@@ -303,7 +305,9 @@ get_url <- function(URL_id) {
       select(-HISPEED) |>
       rename(HISPEED = range)
   }
-    
+  
+  #format the SCH based on above designated factor level
+  #notice we had to take SCH as an exact string to not mess with SCHL
   if (str_detect(URL_id, "\\bSCH\\b")) {
     census_tib <- census_tib |>
       left_join(
@@ -314,6 +318,7 @@ get_url <- function(URL_id) {
       rename(SCH = range)
   }
   
+  #format the HHL based on above designated factor level
   if (str_detect(URL_id, "HHL")) {
     census_tib <- census_tib |>
       left_join(
@@ -324,6 +329,7 @@ get_url <- function(URL_id) {
       rename(HHL = range)
   }
   
+  #format the JWTRNS based on above designated factor level
   if (str_detect(URL_id, "JWTRNS")) {
     census_tib <- census_tib |>
       left_join(
@@ -334,7 +340,8 @@ get_url <- function(URL_id) {
       rename(JWTRNS = range)
   }
 
-      if (str_detect(URL_id, "SCHL")) {
+  #format the SCHL based on above designated factor level
+  if (str_detect(URL_id, "SCHL")) {
     census_tib <- census_tib |>
       left_join(
         SCHL_codes,
@@ -361,6 +368,8 @@ get_url <- function(URL_id) {
   
 }
 ```
+
+The `api_query` function takes in the desired user variables and calls the census data api to take in those values. The variables are taken as columns, and then are sent to the `get_url` helper function. There are many cleaning techniques used to correctly concatenate the different variables as well as adding conditions and subsets. The numerical variables, categorical variables, and final tibble is returned as a list.
 
 ```{r}
 #' Begin query building
@@ -431,6 +440,7 @@ api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var 
   #clean up url
   URL_id <- gsub("%2C", ",", build_url(parsed_url))
   
+  #call the helper function defined before!
   get_url(URL_id)
   
   return(list(
@@ -446,32 +456,42 @@ api_query <- function(surv_year = "2022", num_var = c("AGEP", "PWGTP"), cat_var 
 This function takes the `api_query` function and allows the user, along with the previous defaults from that function, to select multiple years and return one large tibble that binds the multiple years by row.
 
 ```{r}
+#using ..., we can actually also call the api_query function along with specifying multiple surv_years
 multi_api <- function(surv_years, ...) {
   multi_tibs <- lapply(surv_years, function(surv_year) {
+    #calls api_query
     tib_call <- api_query(surv_year = surv_year, ...)
     final_tib <- tib_call$census_tib
     final_tib <- final_tib  |> 
+    #allows us to concatenate the correct surv_year 
       mutate(surv_year = surv_year)
     return(final_tib)
     })
   entire_tib <- bind_rows(multi_tibs)
+  #the tibble with all years rowbinded
   return(entire_tib)
 }
 ```
 
 ### Test the API Function
 
-Ensure the `api_query` function is working properly by feeding in some numeric, date, and categorical variables.
+Ensure the `api_query` function is working properly by feeding in some numeric, date, and categorical variables. Furthermore, let's condition on `ALL`, with `AGEP=30` and subsetting the appropriate state.
 
 ```{r}
-api_query(2016, num_var = c("GASP", "GRPIP", "JWAP"), "FER")
+api_query(surv_year = "2022", num_var =c("AGEP","PWGTP"), cat_var = c("HISPEED", "SCHL", "SCH", "FER", "SEX", "SEX"), geo_level = "ALL", condition = "AGEP=30", geo_subset = "STATE:11")
 ```
+
+Voila! Notice that we output our respective link, the numerical and categorical variables, and the final tibble. Also, any duplicate columns called through user error are removed!
+
+### Test the Multi-API Function
 
 Ensure the `multi_api` function is working properly by combining years and feeding in some numeric, date, and categorical variables.
 
 ```{r}
-multi_api(surv_years = c("2015", "2021"), num_var = c("JWDP","GRPIP","GRPIP"), cat_var = c("FER", "HHL"), condition="AGEP=30", geo_subset= "STATE:19")
+multi_api(surv_years = c("2015", "2021"), num_var = c("JWDP","GRPIP","GRPIP"), cat_var = c("FER", "HHL", "SEX"), condition="SEX=1", geo_subset= "STATE:11")
 ```
+
+Voila! Notice that we output our respective link, the numerical and categorical variables, and the final tibble. Also, any duplicate columns called through user error are removed! Furthermore, we wanted to show that we can condition on categorical variables, and our tibble correctly rowbinds.
 
 Finally, test the empty function call (i.e., test the default query) to reflect assigned \`state\` of 11 (i.e., DC). This is the tibble to be used in creating summaries below.
 
@@ -555,6 +575,23 @@ default_cen_sum <- census_summary()
 print(default_cen_sum)
 ```
 
+If you are interested in a more complex census summary, we can use our `multi_api` function from earlier. It will still be compatible:
+
+```{r}
+multi_api(surv_years = c("2015", "2021"), num_var = c("JWDP","GRPIP","GRPIP"), cat_var = c("FER", "HHL", "SEX"), condition="SEX=1", geo_subset= "STATE:11")
+census_summary()
+
+```
+
+Notice that we output a named list for the means and standard deviations of the called variables, where duplicates are ignored. Furthermore, we created a function that outputs all count data for each categorical variable. It also works on time! I set it back to the default query as well.
+
+Setting it back to the default query for the next steps,
+
+```{r}
+default_query <- api_query()
+default_query
+```
+
 ### Graphical Summary
 
 Create a generic `plot()` function for a census class tibble. Require the user to specify one categorical variable and one numeric variable for plotting purposes.
@@ -599,9 +636,27 @@ Test the \`census_plot\` function on `SEX` and `AGEP` variables per the default 
 
 ```{r}
 #| warning: false
-
 census_plot(cat_var_s = "SEX", num_var_s = "AGEP")
 ```
+
+## Investigative Task
+
+We wanted to investigate if `JWDP` (time departure for work), `JWAP` (time arrival at work), and `JWMNP` (travel time to work) were different (on average) between `SEX` (male and female) given `STATE` = 11 for the year 2021. In particular, 2021 was in the midst of COVID and a lot of interesting trends emerged. Whilst more complicated statistical measures would be required to find the true answer, we will just observe final boxplots!
+
+```{r warning=FALSE}
+#query the api with the desired year and numerical and categorical variables
+api_query(surv_year = c("2021"), num_var = c("JWDP","JWAP","JWMNP"), cat_var = ("SEX"), condition=NULL, geo_subset= "STATE:11")
+
+#summary function takes defaults
+census_summary()
+
+#run plot function with 3 different numerical variables for 3 boxplots
+census_plot(census_tib, num_var_s = c("JWDP"), cat_var_s = "SEX")
+census_plot(census_tib, num_var_s = c("JWAP"), cat_var_s = "SEX")
+census_plot(census_tib, num_var_s = c("JWMNP"), cat_var_s = "SEX")
+```
+
+Based on the boxplots alone, we see a very slight difference in females vs males in `JWAP`, where females on average appear to arrive at work slightly later than men. In `JWMNP` , we notice that females are largely more concentrated around shorter travel times to work, whereas men may take longer to travel to work on average. Notice the indecisive language, we would have to do more robust statistical testing to find out if there were actually significant differences between groups!
 
 ## Project Conclusion
 
